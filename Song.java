@@ -7,16 +7,17 @@ public class Song {
     private int id;
     private String name;
     private String text;
-    private String artist;
+    private Artist artist;
     private String album;
     private LocalTime time;
     private String icon;
     private String Qrcode;
     private boolean pause;
     private boolean liked;
+    private int pakhsh=0;
     public List<Song> likedmusic= new ArrayList<>();
 
-    public Song(int id, String name, String artist, String album, LocalTime time, String icon, String Qrcode) {
+    public Song(int id, String name, Artist artist, String album, LocalTime time, String icon, String Qrcode) {
         this.id = id;
         this.name = name;
         this.artist = artist;
@@ -32,6 +33,14 @@ public class Song {
 
     public String getQrcode() {
         return Qrcode;
+    }
+
+    public int getPakhsh(){
+        return pakhsh;
+    }
+
+    public void setPakhsh(int pakhsh) {
+        this.pakhsh = pakhsh;
     }
 
     public void setPause(boolean pause) {
@@ -74,7 +83,7 @@ public class Song {
         return name;
     }
 
-    public String getArtist() {
+    public Artist getArtist() {
         return artist;
     }
 
@@ -94,7 +103,7 @@ public class Song {
         this.name = name;
     }
 
-    public void setArtist(String artist) {
+    public void setArtist(Artist artist) {
         this.artist = artist;
     }
 
@@ -119,6 +128,7 @@ public class Song {
     }
 
     public void play(){
+        pakhsh++;
 
     }
 
@@ -126,11 +136,11 @@ public class Song {
 
     }
 
-    public void goafter(){
+    public void next(){
 
     }
 
-    public void goback(){
+    public void previous(){
 
     }
 
@@ -156,7 +166,7 @@ public class Song {
 
     }
 
-    public void tasadofy(){
+    public void random(){
 
     }
 }
