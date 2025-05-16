@@ -6,7 +6,7 @@ class FilterByName extends Filter{
     }
     public boolean accept(Song music) {
         for(int i=0;i<name.length;i++){
-            if(name[i].equals(music.getName())){
+            if(name[i].contains(music.getName())){
                 return true;
             }
         }

@@ -1,5 +1,6 @@
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class PlayList {
@@ -10,6 +11,8 @@ public class PlayList {
     public boolean likeplaylist = false;
     private List<Song> music;
     private int count=0; //این واسه چیه؟
+    private List<Artist> artists;
+    private int count=0;
 
     public PlayList(int id, String name, User user, LocalTime creationTime) {
         this.music=new ArrayList<>();
@@ -65,10 +68,27 @@ public class PlayList {
 
     public void addSong(Song song) {
         music.add(song);
+        for(int i=0;i<artists.size();i++) {
+            if(song.getArtist().getName().equals(artists.get(i).getName())) {
+                song.getArtist().getMusics().add(music.get(i));
+                song.getArtist().setNumOfSongs(song.getArtist().getNumOfSongs()+1);
+            }
+            else if(i==artists.size()-1) {
+                artists.add(song.getArtist());
+                song.getArtist().getMusics().add(music.get(i));
+            }
+        }
     }
 
     public void removeSong(Song song) {
         music.remove(song);
+        song.getArtist().getMusics().remove(song);
+        song.getArtist().setNumOfSongs(song.getArtist().getNumOfSongs()-1);
+        artists.remove(song.getArtist());
+    }
+
+    public List<Artist> getArtists(){
+        return artists;
     }
 
     public PlayList filter(Filter filter){
@@ -81,16 +101,24 @@ public class PlayList {
         return playList;
     }
 
-    public List<Object> collectData(DataCollector collector){
-        List<Object> data=new ArrayList<>();
-        for(int i=0;i<music.size();i++){
-            data.add(collector.get(music.get(i)));
-        }
-        return data;
+    public void sotrbytime(List<Song> music){
+        music.sort(Comparator.comparing(Song::getTime));
+    }
+
+    public void sortbyname(List<Song> music){
+        music.sort(Comparator.comparing(Song::getName));
+    }
+
+    public void sortbytedadpakhsh(List<Song> music){
+        music.sort(Comparator.comparing(Song::getPakhsh));
     }
 
     public void setLikeplaylist(boolean likeplaylist) {
         this.likeplaylist = likeplaylist;
+    }
+
+    public void dislikeplaylist(){
+        this.likeplaylist=false;
     }
 
     public void likedplaylist() {
