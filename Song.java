@@ -17,7 +17,6 @@ public class Song {
     private boolean liked;
     public List<Song> likedmusic= new ArrayList<>(); //خود سانگ که نباید لیستی از آهنگای لایک شده داشته باشه. این باید حذف شه
     private int pakhsh=0;
-    public List<Song> likedmusic= new ArrayList<>();
 
     public Song(int id, String name, Artist artist, String album, LocalTime time, String icon, String Qrcode) {
         this.id = id;
@@ -183,7 +182,10 @@ public void unlike() {
     this.liked = false;
 }
  */
-
+    /*public void LikeCount() {
+    this.likeCount++;
+}
+ */
     public void share(){
 
     }
@@ -192,11 +194,11 @@ public void unlike() {
 
     }
 
-    public void takAhang(){
+    public void takAhang(){ //باید بره فرانت
 
     }
 
-    public void random(){
+    public void random(){ //باید بره فرانت
 
     }
 }
