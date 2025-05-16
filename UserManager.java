@@ -1,4 +1,3 @@
-import User;
 
 public class UserManager {
 
@@ -18,4 +17,12 @@ public class UserManager {
     public boolean isEmailTaken(String email) {
         return false;
     }
+
+    public void login() {
+
+	}
+
+	public void logout() {
+
+	}
 }

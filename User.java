@@ -10,7 +10,6 @@ public class User {
 	private List<Playlist> playlists;
 	private List<Song> likedSongs;
 	private List<Song> likedArtists;
-	private Map<Song, Integer> Playcounts;
 
 	public User(String id, String username, String email, String password) {
 		this.id = id;
@@ -82,22 +81,6 @@ public class User {
 
 	public void setLikedArtists(List<Song> likedArtists) {
 		this.likedArtists = likedArtists;
-	}
-
-	public Map<Song, Integer> getPlaycount() {
-		return Playcount;
-	}
-
-	public void setPlaycount(Map<Song, Integer> playcount) {
-		Playcount = playcount;
-	}
-
-	public void login() {
-
-	}
-
-	public void logout() {
-
 	}
 
 	public void updateProfile(String newUsername, String newEmail) {
