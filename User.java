@@ -82,22 +82,32 @@ public class User {
 	public void setLikedArtists(List<Song> likedArtists) {
 		this.likedArtists = likedArtists;
 	}
-	
+
 
 	public void updateProfile(String newUsername, String newEmail) {
 
 	}
 
 	public void likeSong(Song song) {
-
-	}
+			if (!likedSongs.contains(song)) {
+				likedSongs.add(song);
+				song.addLikeCount();
+				song.setLiked(true);
+			}
+		
+			}
 
 	public void addPlaylist(Playlist playlist) {
+		if (!playlists.contains(playlist)) {
+			playlists.add(playlist);
+		}
 
 	}
 
 	public void removePlaylist(Playlist playlist) {
-
+		if (playlist.getOwner().equals(this)) {
+			playlists.remove(playlist);
+		}
 	}
 
 	public void changeProfilePicture(String newPath) {
