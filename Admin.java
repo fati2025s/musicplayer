@@ -17,9 +17,6 @@ public class Admin extends User {
         return null;
     }
 
-    public void updateUserInfo(User user, String newUsername, String newEmail) {
-    }
-
     public List<Playlist> getAllPlaylists() {
         return null;
     }
@@ -34,9 +31,6 @@ public class Admin extends User {
     public void deleteSong(Song song) {
     }
 
-    public void updateSongInfo(Song song, String newTitle, String newArtist) {
-    }
-
     public List<Song> getMostPlayedSongs() {
         return null;
     }
@@ -46,6 +40,6 @@ public class Admin extends User {
     }
 
     public List<Playlist> getUserPlaylists(User user) {
-        return null;
+        return user.getPlaylists();
     }
 }

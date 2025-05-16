@@ -105,7 +105,7 @@ public class User {
 	}
 
 	public void removePlaylist(Playlist playlist) {
-		if (playlist.getOwner().equals(this)) {
+		if (playlist.getUser().equals(this)) {
 			playlists.remove(playlist);
 		}
 	}
