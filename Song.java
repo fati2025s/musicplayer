@@ -9,12 +9,13 @@ public class Song {
     private String text;
     private String artist;
     private String album;
-    private LocalTime time;
+    private LocalTime time; //private LocalDateTime addedTime;
     private String icon;
     private String Qrcode;
-    private boolean pause;
+    //private int duration;
+    private boolean pause; //باید بره فرانت یا موزیک پلیر
     private boolean liked;
-    public List<Song> likedmusic= new ArrayList<>();
+    public List<Song> likedmusic= new ArrayList<>(); //خود سانگ که نباید لیستی از آهنگای لایک شده داشته باشه. این باید حذف شه
 
     public Song(int id, String name, String artist, String album, LocalTime time, String icon, String Qrcode) {
         this.id = id;
@@ -25,6 +26,17 @@ public class Song {
         this.icon = icon;
         this.Qrcode = Qrcode;
     }
+
+    /*public Song(int id, String name, String artist, String album, int duration, String icon, String qrCode) {
+        this.id = id;
+        this.name = name;
+        this.artist = artist;
+        this.album = album;
+        this.duration = duration;
+        this.icon = icon;
+        this.qrCode = qrCode;
+        this.liked = false;
+    } */
 
     public String getIcon() {
         return icon;
@@ -113,6 +125,14 @@ public class Song {
         return id == song.id && Objects.equals(name, song.name) && Objects.equals(text, song.text) && Objects.equals(artist, song.artist) && Objects.equals(album, song.album);
     }
 
+    /*@Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Song)) return false;
+        Song song = (Song) o;
+        return id == song.id;
+    } */
+
     @Override
     public String toString() {
         return "[Name: " + name + ", Artist: " + artist + ", Album: " + album + "]";
@@ -143,6 +163,15 @@ public class Song {
         likedmusic.remove(this);
         this.setLiked(false);
     }
+
+    /*public void like() {
+    this.liked = true;
+}
+
+public void unlike() {
+    this.liked = false;
+}
+ */
 
     public void share(){
 

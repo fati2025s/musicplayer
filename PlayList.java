@@ -3,13 +3,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PlayList {
-    private int id;
+    private int id; //String id
     private String name;
     private User user;
     private LocalTime creationTime;
     public boolean likeplaylist = false;
     private List<Song> music;
-    private int count=0;
+    private int count=0; //این واسه چیه؟
 
     public PlayList(int id, String name, User user, LocalTime creationTime) {
         this.music=new ArrayList<>();
@@ -31,7 +31,7 @@ public class PlayList {
         return name;
     }
 
-    public String getUser() {
+    public User getUser() {
         return user;
     }
 
@@ -105,7 +105,14 @@ public class PlayList {
 
     }
 
-    public void deletList(){
+    public void deletePlayList(){
 
     }
+}
+
+public void rename(String newName) {
+    this.name = newName;
+}
+
+public void delete() {
 }
