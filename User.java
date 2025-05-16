@@ -82,6 +82,7 @@ public class User {
 	public void setLikedArtists(List<Song> likedArtists) {
 		this.likedArtists = likedArtists;
 	}
+	
 
 	public void updateProfile(String newUsername, String newEmail) {
 
