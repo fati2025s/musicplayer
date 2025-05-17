@@ -12,14 +12,3 @@ class FilterByArtist extends Filter {
         return false;
     }
 }
-/*باید فقط اسم یه خواننده رو بگیریم و فیلترش کنیم نه چندتا خواننده
-
-    public FilterByArtist(String artist) {
-        this.artist = artist;
-    }
-
-    @Override
-    public boolean accept(Song song) {
-        return artist.equalsIgnoreCase(song.getArtist());
-    }
-}*/

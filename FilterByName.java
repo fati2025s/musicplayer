@@ -13,16 +13,3 @@ class FilterByName extends Filter{
         return false;
     }
 }
-
-
-/*باید فقط اسم یه آهنگ رو بگیریم و فیلترش کنیم نه چندتا آهنگ
-
-    public FilterByName(String name) {
-        this.name = name;
-    }
-
-    @Override
-    public boolean accept(Song song) {
-        return name.equalsIgnoreCase(song.getName());
-    }
-}*/

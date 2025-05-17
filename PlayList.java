@@ -1,20 +1,19 @@
-import java.time.LocalTime;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
 public class PlayList {
-    private int id; //String id
+    private int id;
     private String name;
     private User user;
-    private LocalTime creationTime;
+    private LocalDateTime creationTime;
     public boolean likeplaylist = false;
     private List<Song> music;
-    private int count=0; //این واسه چیه؟
     private List<Artist> artists;
-    private int count=0;
 
-    public PlayList(int id, String name, User user, LocalTime creationTime) {
+    public PlayList(int id, String name, User user, LocalDateTime creationTime) {
         this.music=new ArrayList<>();
         this.id = id;
         this.name = name;
@@ -34,11 +33,11 @@ public class PlayList {
         return name;
     }
 
-    public User getUser() {
+    public String getUser() {
         return user;
     }
 
-    public LocalTime getCreationTime() {
+    public LocalDateTime getCreationTime() {
         return creationTime;
     }
 
@@ -54,7 +53,7 @@ public class PlayList {
         this.user = user;
     }
 
-    public void setCreationTime(LocalTime creationTime) {
+    public void setCreationTime(LocalDateTime creationTime) {
         this.creationTime = creationTime;
     }
 
@@ -91,7 +90,7 @@ public class PlayList {
         return artists;
     }
 
-    public PlayList filter(Filter filter){
+    /*public PlayList filter(Filter filter){
         PlayList playList=new PlayList();
         for(int i=0;i<music.size();i++) {
             if (filter.accept(music.get(i))) {
@@ -111,7 +110,7 @@ public class PlayList {
 
     public void sortbytedadpakhsh(List<Song> music){
         music.sort(Comparator.comparing(Song::getPakhsh));
-    }
+    }*/
 
     public void setLikeplaylist(boolean likeplaylist) {
         this.likeplaylist = likeplaylist;
@@ -132,15 +131,4 @@ public class PlayList {
     public void shareWith(User user) {
 
     }
-
-    public void deletePlayList(){
-
-    }
-}
-
-public void rename(String newName) {
-    this.name = newName;
-}
-
-public void delete() {
 }
