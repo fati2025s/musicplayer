@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../service/AudioService.dart';
 import '../service/localmusic.dart';
 import '../models/song.dart';
+import 'TextPage.dart';
+import 'package:amlv/amlv.dart';
 
 class PlayerScreen extends StatefulWidget {
   final AudioService audioService;
@@ -16,6 +18,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   late AudioService _audio;
   bool isShuffle = false;
   List<Song> allSongs = [];
+  bool isPlaying = true;
 
   @override
   void initState() {
@@ -70,7 +73,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
             style: const TextStyle(fontSize: 16),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 120),
 
           StreamBuilder<Duration>(
             stream: _audio.positionStream,
@@ -108,49 +111,71 @@ class _PlayerScreenState extends State<PlayerScreen> {
             },
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 40),
 
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
               IconButton(
+                onPressed: () {
+                  /*Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>TextPage(text: _audio),
+                    ),
+                  );*/
+                },
+                icon: const Icon(Icons.queue_music_rounded),
+                iconSize: 42,
+              ),
+
+
+              const SizedBox(width: 25),
+              IconButton(
                 icon: const Icon(Icons.skip_previous),
-                iconSize: 36,
+                iconSize: 48,
                 onPressed: () => _audio.previous(),
               ),
+              const SizedBox(width: 15),
               IconButton(
-                icon: const Icon(Icons.play_arrow),
+                icon: Icon(
+                  isPlaying ? Icons.pause : Icons.play_arrow,
+                ),
+
                 iconSize: 48,
-                onPressed: () => _audio.play(),
+                onPressed: () {
+                  setState(() {
+                    if (isPlaying) {
+                      _audio.pause();
+                    } else {
+                      _audio.play();
+                    }
+                    isPlaying = !isPlaying;
+                  });
+                },
               ),
-              IconButton(
-                icon: const Icon(Icons.pause),
-                iconSize: 48,
-                onPressed: () => _audio.pause(),
-              ),
+              const SizedBox(width: 15),
               IconButton(
                 icon: const Icon(Icons.skip_next),
-                iconSize: 36,
+                iconSize: 48,
                 onPressed: () => _audio.next(),
+              ),
+              const SizedBox(width: 25),
+              IconButton(
+                icon: Icon(
+                  isShuffle ? Icons.shuffle_on : Icons.shuffle,
+                  color: isShuffle ? Colors.green : Colors.black,
+                ),
+                iconSize: 36,
+                onPressed: () {
+                  setState(() {
+                    isShuffle = !isShuffle;
+                    _audio.setShuffle(isShuffle);
+                  });
+                },
               ),
             ],
           ),
-
-          const SizedBox(height: 10),
-
-          IconButton(
-            icon: Icon(
-              isShuffle ? Icons.shuffle_on : Icons.shuffle,
-              color: isShuffle ? Colors.green : Colors.black,
-            ),
-            onPressed: () {
-              setState(() {
-                isShuffle = !isShuffle;
-                _audio.setShuffle(isShuffle);
-              });
-            },
-          ),
-          const Text("Shuffle"),
         ],
       ),
     );

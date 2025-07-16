@@ -36,6 +36,8 @@ dependencies:
   shared_preferences: ^2.2.2
   permission_handler: ^11.3.1
   flutter_media_metadata: ^1.0.0
+  image_picker: ^1.1.2
+  amlv: ^1.0.2
   #on_audio_query: ^2.9.0
 
   # The following adds the Cupertino Icons font to your application.

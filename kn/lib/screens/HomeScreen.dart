@@ -8,6 +8,9 @@ import '../screens/UploadSongScreen.dart';
 import '../service/AudioService.dart';
 import '../screens/PlayerScreen.dart';
 import '../service/localmusic.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import '../screens/ProfilePicture.dart';
 
 class HomeScreen extends StatefulWidget {
   HomeScreen({Key? key}) : super(key: key);
@@ -23,7 +26,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Song> allSongs = mockSongs;
   List<Song> filteredSongs = mockSongs;
+  List<File> images=[];
   String searchQuery = "";
+  File? _image;
+  final ImagePicker _picker = ImagePicker();
 
   void toggleLike(Song song) {
     if (song.source == SongSource.local) return;
@@ -99,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               children: [
                 Container(
-                  height: height * 0.25,
+                  height: height * 0.2,
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -109,37 +115,71 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const SizedBox(height: 10),
                       Row(
+                          textDirection: TextDirection.rtl,
                         children: [
-                          const CircleAvatar(
-                            radius: 30,
-                            backgroundImage: AssetImage('assets/profile.jpg'), // یا NetworkImage
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: const [
-                                Text(
-                                  "نام کاربر",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                          GestureDetector(
+                              onTap: () async {
+                                final updatedImages = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ProfileImageSlider(initialImages: images),
                                   ),
-                                ),
-                              ],
+                                  );
+                                  if (updatedImages != null) {
+                                  setState(() {
+                                    images = List<File>.from(updatedImages);
+                                    _image =
+                                    images.isNotEmpty ? images.last : null;
+                                  });
+                              }
+                            },
+                            child: CircleAvatar(
+                              radius: 30,
+                              backgroundImage: images.isNotEmpty
+                                  ? FileImage(_image!) as ImageProvider
+                                  : const AssetImage('assets/profile.jpg'),
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.brightness_6, color: Colors.white),
-                            onPressed: () {
-                              print("تغییر تم");
-                            },
+                          const SizedBox(width: 10),
+                        Text(
+                          "نام",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
+                        ),
+                          const SizedBox(width: 125),
+                        IconButton(
+                          icon: const Icon(Icons.sunny, color: Colors.white),
+                          onPressed: () {
+                            print("تغییر تم");
+                          },
+                        ),
+                        ]
+                      ),
+                      const SizedBox(height: 15),
+                      Row(
+                        children: [
+                      IconButton(
+                        icon: const Icon(Icons.add_a_photo_outlined, color: Colors.white),
+                        onPressed: () async {
+                          final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                          if (pickedFile != null) {
+                            setState(() {
+                              _image = File(pickedFile.path);
+                            });
+                            print("عکس انتخاب شد: ${pickedFile.path}");
+                            images.add(_image!);
+                          } else {
+                            print("هیچ عکسی انتخاب نشد.");
+                          }
+                        },
+                      ),
+            ],
                       ),
                     ],
                   ),
@@ -379,7 +419,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       onTap: () {
                         audioService.setPlaylist(filteredSongs, startIndex: index);
                         audioService.play();
-                        setState(() {}); // برای نمایش mini-player
+                        setState(() {});
 
                         Navigator.push(
                           context,
@@ -398,19 +438,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          /*Navigator.push(
-            context,
-            MaterialPageRoute(
-              //builder: (context) => UploadSongScreen(
-                /*onSongUploaded: (newSong) {
-                  setState(() {
-                    allSongs.add(newSong);
-                    applyFilters();
-                  });
-                },*/
-              ),
-            ),
-          );*/
+
         },
         icon: const Icon(Icons.upload),
         label: const Text("آپلود"),
