@@ -77,14 +77,28 @@ public class Databass {
         return false;
     }
 
+    public void deletuser(User user) {
+        for (User user1 : users) {
+            if (user1.getUsername().equals(user.getUsername())) {
+                users.remove(user1);
+                write(users);
+                break;
+            }
+        }
+    }
+
     public void addUser(User user) {
         users.add(user);
         write(users);
-        System.out.println(users.size());
     }
 
     public void changePassword(User user, User password) {
         user.setPassword(password.getPassword());
+        write(users);
+    }
+
+    public void changeUsername(User user, User username) {
+        user.setUsername(username.getUsername());
         write(users);
     }
 
@@ -99,8 +113,6 @@ public class Databass {
     }
 
     public boolean vojodmusic(Song song,User user) {
-        //System.out.println(users.size());
-        //System.out.println(user.getSongs().size());
         for (User user1 : users) {
             if (user1.getUsername().equals(user.getUsername())) {
                 if(user1.getSongs() == null) {
@@ -122,6 +134,27 @@ public class Databass {
         for(User user1 : users) {
             if (user1.getUsername().equals(user.getUsername())) {
                 user1.getSongs().add(song);
+                write(users);
+                break;
+            }
+        }
+    }
+
+    public void addlikesong(Song song,User user) {
+        for (User user1 : users) {
+            if (user1.getUsername().equals(user.getUsername())) {
+                user1.getLikedSongs().add(song);
+                write(users);
+                break;
+            }
+        }
+    }
+
+    public void deletlikesong(Song song,User user) {
+        for (User user1 : users) {
+            if (user1.getUsername().equals(user.getUsername())) {
+                user1.getLikedSongs().remove(song);
+                write(users);
                 break;
             }
         }

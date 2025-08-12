@@ -29,7 +29,6 @@ public class ClientHandler extends Thread {
         ) {
             String requestLine;
             while ((requestLine = reader.readLine()) != null) {
-                System.out.println("hi");
                 System.out.println("Received from client: " + requestLine);
                 Request request = json.fromJson(requestLine, Request.class);
                 Response response = handleRequest(request);
@@ -70,6 +69,16 @@ public class ClientHandler extends Thread {
                 if (resu)
                     return new Response("success", "user password changed");
                 return new Response("error", "can't change password");
+            case "changeUsername":
+                User user12 = sessions.get(socket);
+                boolean esu = handler.changeUsername(user12,req.getPayload());
+                if (esu)
+                    return new Response("success", "user password changed");
+                return new Response("error", "can't change password");
+            case "deleteUser":
+                User user = sessions.get(socket);
+                handler.deleteUser(user,req.getPayload());
+                return new Response("success", "user deleted");
             case "deletesong":
                 boolean result1 = handler.deleteSong(sessions.get(socket),req.getPayload());
                 if (result1)
@@ -83,14 +92,30 @@ public class ClientHandler extends Thread {
                 if(nati1)
                     return new Response("success", "song added");
                 return new Response("error", "song not added");
-            case "getsong":
+            case "addlikesong":
+                if (sessions.get(socket) == null) {
+                    return new Response("error", "not logged in");
+                }
+                boolean nati2=handler.addlikesong(sessions.get(socket),req.getPayload());
+                if(nati2)
+                    return new Response("success", "song liked");
+                return new Response("error", "song not liked");
+            case "deletlikesong":
+                if (sessions.get(socket) == null) {
+                    return new Response("error", "not logged in");
+                }
+                boolean nati3=handler.deletlikesong(sessions.get(socket),req.getPayload());
+                if(nati3)
+                    return new Response("success", "song disliked");
+                return new Response("error", "song not disliked");
+            /*case "getsong":
                 User loggedInUser1 = sessions.get(socket);
                 if (loggedInUser1 == null) {
                     return new Response("error", "not logged in");
                 }
                 if(handler.getSong(loggedInUser1,req.getPayload())==null)
                     return new Response("error", "song not found");
-                return new Response("success", "song found");
+                return new Response("success", "song found");*/
             /*case "getsongsname":
                 User loggedInUser2 = sessions.get(socket);
                 if (loggedInUser2 == null) {
@@ -124,19 +149,19 @@ public class ClientHandler extends Thread {
                     return new Response("error", "songs not found");
                 return new Response("success", "songs found");*/
             case "addPlaylist":
-                boolean nati2 = handler.addPlaylist(sessions.get(socket),req.getPayload());
-                if(nati2)
+                boolean nati5 = handler.addPlaylist(sessions.get(socket),req.getPayload());
+                if(nati5)
                     return new Response("success", "playlist added");
                 return new Response("error", "playlist not added");
             case "deletePlaylist":
-                boolean nati3 = handler.deletePlaylist(sessions.get(socket),req.getPayload());
-                if(nati3)
+                boolean nati8 = handler.deletePlaylist(sessions.get(socket),req.getPayload());
+                if(nati8)
                     return new Response("success", "playlist deleted");
                 return new Response("error", "playlist not deleted");
-            case "getplaylist":
+            /*case "getplaylist":
                 handler.getPlaylist(req.getPayload());
             case "getplaylists":
-                handler.getPlaylists(req.getPayload());
+                handler.getPlaylists(req.getPayload());*/
             default:
                 return new Response("error", "try another request");
         }

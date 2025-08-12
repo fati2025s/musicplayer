@@ -14,7 +14,7 @@ public class User {
     private List<File> profilePicturePath;
     private List<Song> songs;
     private List<PlayList> playlists=new ArrayList<>();
-    private List<Song> likedSongs=new ArrayList<>();
+    private List<Song> likedSongs;
     private List<Song> likedArtists=new ArrayList<>();
 
     public User(String id, String username, String email, String password) {
@@ -23,6 +23,7 @@ public class User {
         this.email = email;
         this.password = password;
         this.profilePicturePath = new ArrayList<>();
+        this.likedSongs = new ArrayList<>();
         this.songs = new ArrayList<>();
     }
 

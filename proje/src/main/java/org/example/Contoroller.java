@@ -25,11 +25,32 @@ public class Contoroller {
         return false;
     }
 
+    public synchronized void deleteUser(User user,JsonObject userJson){
+        User user1 = json.fromJson(userJson, User.class);
+        databass.deletuser(user1);
+    }
+
     public synchronized boolean addSong(User user,JsonObject song) {
         if(databass.vojodmusic(json.fromJson(song, Song.class),user))
             return false;
         databass.addmusic(json.fromJson(song, Song.class),user);
         return true;
+    }
+
+    public synchronized boolean addlikesong(User user,JsonObject likes) {
+        if(databass.vojodmusic(json.fromJson(likes, Song.class),user)) {
+            databass.addlikesong(json.fromJson(likes, Song.class),user);
+            return true;
+        }
+        return false;
+    }
+
+    public synchronized boolean deletlikesong(User user,JsonObject likes) {
+        if(databass.vojodmusic(json.fromJson(likes, Song.class),user)) {
+            databass.deletlikesong(json.fromJson(likes, Song.class),user);
+            return true;
+        }
+        return false;
     }
 
     public synchronized boolean deleteSong(User user,JsonObject song) {
@@ -73,11 +94,20 @@ public class Contoroller {
         return false;
     }
 
+    public synchronized boolean changeUsername(User use,JsonObject user) {
+        User user1 = json.fromJson(user, User.class);
+        if(databass.exitingUser(user1)){
+            databass.changeUsername(use,user1);
+            return true;
+        }
+        return false;
+    }
+
     public synchronized boolean updateUser(JsonObject user) {
         return true;
     }
 
-    public synchronized PlayList getPlaylist(JsonObject playlist) {
+    /*public synchronized PlayList getPlaylist(JsonObject playlist) {
         return json.fromJson(playlist, PlayList.class);
     }
 
@@ -85,7 +115,6 @@ public class Contoroller {
         List<PlayList> playlistList = new ArrayList<>();
         /*for (JsonObject playlist : playlists) {
             playlistList.add(json.fromJson(playlist, PlayList.class));
-        }*/
-        return playlistList;
-    }
+        }
+        return playlistList*/
 }
