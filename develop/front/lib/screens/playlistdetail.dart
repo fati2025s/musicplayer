@@ -1,0 +1,137 @@
+import 'package:flutter/material.dart';
+import '../models/playlist.dart';
+import '../models/song.dart';
+import '../service/SocketService.dart';
+import '../screens/player.dart';
+import '../service/audio.dart';
+
+class PlaylistDetailsScreen extends StatefulWidget {
+  final Playlist playlist;
+
+  const PlaylistDetailsScreen({Key? key, required this.playlist}) : super(key: key);
+
+  @override
+  State<PlaylistDetailsScreen> createState() => _PlaylistDetailsScreenState();
+}
+
+class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
+  final AudioService audioService = AudioService();
+  final SocketService socketService = SocketService();
+
+  @override
+  void initState() {
+    super.initState();
+    if (!socketService.isConnected) {
+      socketService.connect("192.168.1.101", 8080);
+    }
+  }
+
+  void removeSong(Song song) async {
+    await socketService.send({
+      "type": "removeSongFromPlaylist",
+      "payload": {
+        "playlistId": widget.playlist.id,
+        "songId": song.id,
+      }
+    });
+
+    setState(() {
+      widget.playlist.songs.remove(song);
+    });
+  }
+
+  void addSong(Song song) async {
+    await socketService.send({
+      "type": "addSongToPlaylist",
+      "payload": {
+        "playlistId": widget.playlist.id,
+        "song": song.toJson(),
+      }
+    });
+
+    setState(() {
+      widget.playlist.songs.add(song);
+    });
+  }
+
+  void showAddSongDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("افزودن آهنگ به پلی‌لیست"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: "نام آهنگ"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("انصراف"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                final newSong = Song(
+                  id: DateTime.now().millisecondsSinceEpoch,
+                  name: name,
+                  artist: "Unknown",
+                  url: "",
+                  source: SongSource.uploaded,
+                  isDownloaded: false,
+                );
+                addSong(newSong);
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text("افزودن"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final playlist = widget.playlist;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(playlist.name),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: showAddSongDialog,
+          ),
+        ],
+      ),
+      body: playlist.songs.isEmpty
+          ? const Center(child: Text("هیچ آهنگی در این پلی‌لیست نیست"))
+          : ListView.builder(
+        itemCount: playlist.songs.length,
+        itemBuilder: (context, index) {
+          final song = playlist.songs[index];
+          return ListTile(
+            leading: const Icon(Icons.music_note),
+            title: Text(song.name),
+            subtitle: Text(song.artist),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: () => removeSong(song),
+            ),
+            onTap: () {
+              audioService.setPlaylist(playlist.songs, startIndex: index);
+              audioService.play();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PlayerScreen(audioService: audioService),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
