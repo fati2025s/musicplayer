@@ -9,15 +9,13 @@ public class Song {
     private String text;
     private Artist artist;
     private String album;
-    private LocalDateTime time;
     private String icon;
     private String Qrcode;
     private boolean liked;
-    private int pakhsh = 0; // تعداد پخش
+    private int pakhsh = 0;
     private String filePath;
     private String source;
 
-    // شمارنده لایک‌ها
     private int likeCount = 0;
 
     public Song(int id, String name, Artist artist, String album) {
@@ -100,10 +98,6 @@ public class Song {
         return album;
     }
 
-    public LocalDateTime getTime() {
-        return time;
-    }
-
     public void setId(int id) {
         this.id = id;
     }
@@ -120,11 +114,6 @@ public class Song {
         this.album = album;
     }
 
-    public void setTime(LocalDateTime time) {
-        this.time = time;
-    }
-
-    // شمارنده لایک‌ها
     public int getLikeCount() {
         return likeCount;
     }
@@ -166,8 +155,6 @@ public class Song {
         this.setLiked(false);
         removeLikeCount();
     }
-
-    //public void share() { }
 
     @Override
     public int hashCode() {

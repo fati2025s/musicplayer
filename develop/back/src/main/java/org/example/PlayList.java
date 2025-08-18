@@ -1,7 +1,6 @@
 package org.example;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+//import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -11,17 +10,16 @@ public class PlayList {
     private int id;
     private String name;
     private User user;
-    private LocalDateTime creationTime;
+    //private LocalDateTime creationTime;
     public boolean likeplaylist = false;
     private List<Song> music;
     private List<Artist> artists;
 
-    public PlayList(int id, String name, User user, LocalDateTime creationTime) {
+    public PlayList(int id, String name, User user) {
         this.music=new ArrayList<>();
         this.id = id;
         this.name = name;
         this.user = user;
-        this.creationTime = creationTime;
     }
 
     public PlayList(){
@@ -36,12 +34,8 @@ public class PlayList {
         return name;
     }
 
-    /*public String getUser() {
+    public User getUser() {
         return user;
-    }*/
-
-    public LocalDateTime getCreationTime() {
-        return creationTime;
     }
 
     public void setId(int id) {
@@ -55,10 +49,11 @@ public class PlayList {
     public void setUser(User user) {
         this.user = user;
     }
+    
+    public void setSongs(List<Song> songs) {
+    this.music = songs;
+}
 
-    public void setCreationTime(LocalDateTime creationTime) {
-        this.creationTime = creationTime;
-    }
 
     public List<Song> getMusics(){
         return music;
@@ -93,28 +88,6 @@ public class PlayList {
         return artists;
     }
 
-    /*public PlayList filter(Filter filter){
-        PlayList playList=new PlayList();
-        for(int i=0;i<music.size();i++) {
-            if (filter.accept(music.get(i))) {
-                playList.addSong(music.get(i));
-            }
-        }
-        return playList;
-    }
-
-    public void sotrbytime(List<Song> music){
-        music.sort(Comparator.comparing(Song::getTime));
-    }
-
-    public void sortbyname(List<Song> music){
-        music.sort(Comparator.comparing(Song::getName));
-    }
-
-    public void sortbytedadpakhsh(List<Song> music){
-        music.sort(Comparator.comparing(Song::getPakhsh));
-    }*/
-
     public void setLikeplaylist(boolean likeplaylist) {
         this.likeplaylist = likeplaylist;
     }
@@ -140,12 +113,11 @@ public class PlayList {
         if (o == null || getClass() != o.getClass()) return false;
         PlayList playList = (PlayList) o;
         return id == playList.id && likeplaylist == playList.likeplaylist && Objects.equals(name, playList.name) &&
-                Objects.equals(user, playList.user) && Objects.equals(creationTime, playList.creationTime) &&
                 Objects.equals(music, playList.music) && Objects.equals(artists, playList.artists);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, user, creationTime, likeplaylist, music, artists);
+        return Objects.hash(id, name, user, likeplaylist, music, artists);
     }
 }
