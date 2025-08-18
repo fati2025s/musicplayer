@@ -5,6 +5,8 @@ import 'package:project/screens/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
+import '../service/SocketService.dart';
+
 class Signup extends StatefulWidget {
   const Signup({super.key});
 
@@ -24,29 +26,12 @@ class _SignupState extends State<Signup> {
   final TextEditingController _controllerConFirmPassword = TextEditingController();
 
   bool _obscurePassword = true;
-  Map<String, String> _accounts = {};
+  final SocketService socketService = SocketService();
 
   @override
   void initState() {
     super.initState();
-    _loadAccounts();
-  }
-
-  Future<void> _loadAccounts() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString("accounts");
-    if (raw != null) {
-      final decoded = json.decode(raw) as Map<String, dynamic>;
-      setState(() {
-        _accounts = decoded.map((k, v) => MapEntry(k, v.toString()));
-      });
-    }
-  }
-
-  Future<void> _saveAccount(String username, String password) async {
-    _accounts[username] = password;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("accounts", json.encode(_accounts));
+    socketService.connect("192.168.1.101", 8080); // آدرس سرور
   }
 
   void _showToast(String msg, {Color color = Colors.red}) {
@@ -71,11 +56,6 @@ class _SignupState extends State<Signup> {
       return;
     }
 
-    if (_accounts.containsKey(username)) {
-      _showToast("Username is already registered.");
-      return;
-    }
-
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(email)) {
       _showToast("Invalid email format.");
@@ -95,18 +75,35 @@ class _SignupState extends State<Signup> {
       return;
     }
 
-    await _saveAccount(username, password);
+    try {
+      final request = {
+        "type": "register",
+        "payload": {
+          "username": username,
+          "email": email,
+          "password": password,
+        }
+      };
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("loginStatus", true);
-    await prefs.setString("userName", username);
+      final response = await socketService.sendAndWait(request);
 
-    _showToast("Registered successfully!", color: Colors.green);
+      if (response["success"] == "success") {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool("loginStatus", true);
+        await prefs.setString("userName", username);
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => HomeScreen()),
-    );
+        _showToast("Registered successfully!", color: Colors.green);
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomeScreen()),
+        );
+      } else {
+        _showToast(response["message"] ?? "Registration failed.");
+      }
+    } catch (e) {
+      _showToast("Error: $e");
+    }
   }
 
   @override
@@ -227,6 +224,7 @@ class _SignupState extends State<Signup> {
     _controllerEmail.dispose();
     _controllerPassword.dispose();
     _controllerConFirmPassword.dispose();
+    socketService.close();
     super.dispose();
   }
 }

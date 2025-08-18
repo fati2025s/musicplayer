@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import '../models/playlist.dart';
 import '../models/song.dart';
 import '../service/SocketService.dart';
 import '../screens/player.dart';
 import '../service/audio.dart';
+import '../service/playlist.dart';
 
 class PlaylistDetailsScreen extends StatefulWidget {
   final Playlist playlist;
@@ -17,6 +19,7 @@ class PlaylistDetailsScreen extends StatefulWidget {
 class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
   final AudioService audioService = AudioService();
   final SocketService socketService = SocketService();
+  late PlaylistService playlistService;
 
   @override
   void initState() {
@@ -24,6 +27,7 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
     if (!socketService.isConnected) {
       socketService.connect("192.168.1.101", 8080);
     }
+    playlistService = PlaylistService(socketService);
   }
 
   void removeSong(Song song) async {
@@ -92,6 +96,50 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
     );
   }
 
+  void showShareDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("اشتراک‌گذاری پلی‌لیست"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: "نام کاربری مقصد"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("انصراف"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final targetUsername = controller.text.trim();
+              if (targetUsername.isNotEmpty) {
+                final ok = await playlistService.sharePlaylist(
+                  widget.playlist.id,
+                  targetUsername,
+                );
+                if (ok) {
+                  Fluttertoast.showToast(
+                    msg: "با موفقیت اشتراک‌گذاری شد!",
+                    backgroundColor: Colors.green,
+                  );
+                } else {
+                  Fluttertoast.showToast(
+                    msg: "خطا در اشتراک‌گذاری پلی‌لیست",
+                    backgroundColor: Colors.red,
+                  );
+                }
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text("اشتراک‌گذاری"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final playlist = widget.playlist;
@@ -99,6 +147,10 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
       appBar: AppBar(
         title: Text(playlist.name),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: showShareDialog,
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: showAddSongDialog,

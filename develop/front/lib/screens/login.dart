@@ -3,7 +3,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'signup.dart';
 import '../screens/home.dart';
-import 'dart:convert';
+import '../service/SocketService.dart';
 
 class Login extends StatefulWidget {
   const Login({Key? key}) : super(key: key);
@@ -20,13 +20,13 @@ class _LoginState extends State<Login> {
   final TextEditingController _controllerPassword = TextEditingController();
 
   bool _obscurePassword = true;
-  Map<String, String> _registeredAccounts = {};
+  final SocketService socketService = SocketService();
 
   @override
   void initState() {
     super.initState();
     _checkLoginStatus();
-    _loadRegisteredAccounts();
+    socketService.connect("192.168.1.101", 8080); // ← آدرس و پورت بک‌اندت
   }
 
   Future<void> _checkLoginStatus() async {
@@ -35,18 +35,6 @@ class _LoginState extends State<Login> {
     if (isLoggedIn) {
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (_) => HomeScreen()));
-    }
-  }
-
-  Future<void> _loadRegisteredAccounts() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString("accounts");
-    if (jsonString != null) {
-      final decoded = json.decode(jsonString) as Map<String, dynamic>;
-      setState(() {
-        _registeredAccounts =
-            decoded.map((key, value) => MapEntry(key, value.toString()));
-      });
     }
   }
 
@@ -69,23 +57,33 @@ class _LoginState extends State<Login> {
       _showToast("Please fill all fields.");
       return;
     }
-    if (!_registeredAccounts.containsKey(username)) {
-      _showToast("Username is not registered.");
-      return;
+
+    try {
+      final request = {
+        "type": "login",
+        "payload": {
+          "username": username,
+          "password": password,
+        }
+      };
+
+      final response = await socketService.sendAndWait(request);
+
+      if (response["success"] == "success") {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool("loginStatus", true);
+        await prefs.setString("userName", username);
+
+        _showToast("Login successful!", color: Colors.green);
+
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (_) => HomeScreen()));
+      } else {
+        _showToast(response["message"] ?? "Login failed.");
+      }
+    } catch (e) {
+      _showToast("Error: $e");
     }
-    if (_registeredAccounts[username] != password) {
-      _showToast("Wrong password.");
-      return;
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("loginStatus", true);
-    await prefs.setString("userName", username);
-
-    _showToast("Login successful!", color: Colors.green);
-
-    Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (_) => HomeScreen()));
   }
 
   @override
@@ -182,6 +180,7 @@ class _LoginState extends State<Login> {
     _focusNodePassword.dispose();
     _controllerUsername.dispose();
     _controllerPassword.dispose();
+    socketService.close();
     super.dispose();
   }
 }
