@@ -3,19 +3,20 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'BlackHomeScreen.dart';
+import 'HomeScreen.dart';
 import 'Signup.dart';
 import 'dart:convert';
-import 'HomeScreen.dart';
 import 'package:local_auth/local_auth.dart';
 
-class Login extends StatefulWidget {
-  const Login({Key? key}) : super(key: key);
+class BlackLogin extends StatefulWidget {
+  const BlackLogin({Key? key}) : super(key: key);
 
   @override
-  State<Login> createState() => _LoginState();
+  State<BlackLogin> createState() => _LoginState();
 }
 
-class _LoginState extends State<Login> {
+class _LoginState extends State<BlackLogin> {
   final GlobalKey<FormState> _formKey = GlobalKey();
   final FocusNode _focusNodePassword = FocusNode();
   final TextEditingController _controllerUsername = TextEditingController();
@@ -110,7 +111,7 @@ class _LoginState extends State<Login> {
         await prefs.setString("userPassword", password);
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
+          MaterialPageRoute(builder: (context) => BlackHomeScreen()),
         );
       } else {
         setState(() {
@@ -138,7 +139,7 @@ class _LoginState extends State<Login> {
         await prefs.setString("userName", "BiometricUser");
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
+          MaterialPageRoute(builder: (context) => BlackHomeScreen()),
         );
       } else {
         setState(() => message = "اثر انگشت تایید نشد");
@@ -146,9 +147,9 @@ class _LoginState extends State<Login> {
     } catch (e) {
       setState(() => message = "خطا در ورود با اثر انگشت: $e");
     }
-  }
+  }*/
 
-  Future<void> _checkLoginStatus() async {
+  /*Future<void> _checkLoginStatus() async {
     final prefs = await SharedPreferences.getInstance();
     if (prefs.getBool("loginStatus") ?? false) {
       Navigator.pushReplacement(
@@ -173,9 +174,9 @@ class _LoginState extends State<Login> {
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.red,
-                  Colors.white,
+                  Colors.black,
                 ],
-                stops: [0.2, 1.0],
+                stops: [0.1, 1.0],
               ),
             ),
           ),
@@ -265,7 +266,8 @@ class _LoginState extends State<Login> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text("Don't have an account?"),
+                      const Text("Don't have an account?",
+                      style: TextStyle(color: Colors.white),),
                       TextButton(
                         onPressed: () {
                           _formKey.currentState?.reset();

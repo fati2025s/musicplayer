@@ -9,14 +9,17 @@ import 'package:untitled/screens/Login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
-class Signup extends StatefulWidget {
-  const Signup({super.key});
+import 'BlackHomeScreen.dart';
+import 'BlackLogin.dart';
+
+class BlackSignup extends StatefulWidget {
+  const BlackSignup({super.key});
 
   @override
-  State<Signup> createState() => _SignupState();
+  State<BlackSignup> createState() => _SignupState();
 }
 
-class _SignupState extends State<Signup> {
+class _SignupState extends State<BlackSignup> {
   final GlobalKey<FormState> _formKey = GlobalKey();
 
   final FocusNode _focusNodeEmail = FocusNode();
@@ -129,7 +132,7 @@ class _SignupState extends State<Signup> {
       if (responseJson["success"] == "success") {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
+          MaterialPageRoute(builder: (context) => BlackHomeScreen()),
         );
       }
     }  catch (e) {
@@ -156,9 +159,9 @@ class _SignupState extends State<Signup> {
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.red,
-                  Colors.white,
+                  Colors.black,
                 ],
-                stops: [0.2, 1.0],
+                stops: [0.1, 1.0],
               ),
             ),
           ),
@@ -312,13 +315,14 @@ class _SignupState extends State<Signup> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text("Already have an account?"),
+                            const Text("Already have an account?",
+                            style: TextStyle(color: Colors.white),),
                             TextButton(
                               onPressed: () {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) => const Login()),
+                                      builder: (context) => const BlackLogin()),
                                 );
                               },
                               child: const Text("Login",
@@ -332,8 +336,8 @@ class _SignupState extends State<Signup> {
                 ),
               ),
             ),
-        ),
-      ],
+          ),
+        ],
       ),
     );
   }

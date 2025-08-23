@@ -2,26 +2,16 @@ import 'package:flutter/material.dart';
 import '../models/song.dart';
 import '../utils/auto_playlists.dart';
 
-class LikedSongsScreen extends StatelessWidget {
+class BlackLikedSongsScreen extends StatelessWidget {
   final List<Song> allSongs;
 
-  const LikedSongsScreen({Key? key, required this.allSongs}) : super(key: key);
+  const BlackLikedSongsScreen({Key? key, required this.allSongs}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final liked = getLikedSongs(allSongs);
-    decoration: const BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Colors.red,
-          Colors.white,
-        ],
-        stops: [0.5, 1.0],
-      ),
-    );
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(title: const Text("❤️ Liked Songs")),
       body: ListView.builder(
         itemCount: liked.length,

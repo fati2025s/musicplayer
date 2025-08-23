@@ -7,18 +7,17 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:untitled/models/playlist.dart';
 import 'package:untitled/screens/blackplaylistdetail.dart';
-import 'package:untitled/screens/playlistdetail.dart';
 
-class PlaylistsHome extends StatefulWidget {
+class BlackPlaylistsHome extends StatefulWidget {
   final List<Playlist> allplaylists;
 
-  const PlaylistsHome({Key? key, required this.allplaylists}) : super(key: key);
+  const BlackPlaylistsHome({Key? key, required this.allplaylists}) : super(key: key);
 
   @override
-  State<PlaylistsHome> createState() => _PlaylistsHomeState();
+  State<BlackPlaylistsHome> createState() => _PlaylistsHomeState();
 }
 
-class _PlaylistsHomeState extends State<PlaylistsHome> {
+class _PlaylistsHomeState extends State<BlackPlaylistsHome> {
   late List<Playlist> playlists;
   String message = "";
   final TextEditingController _controllername = TextEditingController();
@@ -143,6 +142,7 @@ class _PlaylistsHomeState extends State<PlaylistsHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
         title: const Text('My Playlists'),
         centerTitle: true,
@@ -167,13 +167,13 @@ class _PlaylistsHomeState extends State<PlaylistsHome> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => PlaylistDetailsScreen(playlist: playlists[index]),
+                    builder: (_) => BlackPlaylistDetailsScreen(playlist: playlists[index]),
                   ),
                 );
               },
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.red[200],
+                  color: Color(0xFF8A0000),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -199,4 +199,3 @@ class _PlaylistsHomeState extends State<PlaylistsHome> {
     );
   }
 }
-

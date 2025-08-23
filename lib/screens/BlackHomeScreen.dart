@@ -3,40 +3,36 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_media_metadata/flutter_media_metadata.dart';
-import 'package:untitled/screens/BlackHomeScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:untitled/screens/PlaylistsHome.dart';
-import 'package:untitled/screens/userprofile.dart';
 import 'package:flutter/foundation.dart';
-import 'package:untitled/screens/PlaylistsHome.dart';
 import '../models/playlist.dart';
 import '../models/song.dart';
 import '../models/song_sort.dart';
-import '../screens/RecentlyPlayedScreen.dart';
-import '../screens/LikedSongsScreen.dart';
-import '../screens/UploadSongScreen.dart';
 import 'package:path_provider/path_provider.dart';
 import '../service/AudioService.dart';
-import '../screens/PlayerScreen.dart';
 import '../service/SocketService.dart';
 import '../service/localmusic.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:async';
-import '../screens/ProfilePicture.dart';
-import '../screens/Login.dart';
-import '../screens/Signup.dart';
-import '../screens/Account.dart';
 import 'dart:io';
-class HomeScreen extends StatefulWidget {
-  HomeScreen({Key? key}) : super(key: key);
+import 'BlackLikedSongsScreen.dart';
+import 'BlackPlayerScreen.dart';
+import 'BlackPlaylistHome.dart';
+import 'BlackProfilePicture.dart';
+import 'BlackRecentlyPlayedScreen.dart';
+import 'BlackSignup.dart';
+import 'HomeScreen.dart';
+import 'blackuserprofile.dart';
+class BlackHomeScreen extends StatefulWidget {
+  BlackHomeScreen({Key? key}) : super(key: key);
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<BlackHomeScreen> createState() => _HomeScreenState();
 //final LocalMusicService localMusicService = LocalMusicService();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<BlackHomeScreen> {
   final AudioService audioService = AudioService();
   final LocalMusicService localMusicService = LocalMusicService();
   final SocketService socketService = SocketService();
@@ -222,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
         await prefs.clear();
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => Signup()),
+          MaterialPageRoute(builder: (context) => BlackSignup()),
         );
       } else {
         print("❌ حذف نشد: ${responseJson["message"]}");
@@ -426,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
         await prefs.setString("Name", name);
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => PlaylistsHome(allplaylists: playlists)),
+          MaterialPageRoute(builder: (context) => BlackPlaylistsHome(allplaylists: playlists)),
         );
       } else {
         setState(() {
@@ -505,15 +501,18 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Create new playlist"),
+        backgroundColor: Colors.black,
+        title: const Text("Create new playlist",style: TextStyle(color: Colors.white),),
         content: TextField(
           controller: _controllername,
-          decoration: const InputDecoration(labelText: "name"),
+          decoration: const InputDecoration(labelText: "name",
+            labelStyle: const TextStyle(color: Colors.white),),
+
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text("cancel"),
+            child: const Text("cancel",style: TextStyle(color: Colors.white),),
             style: TextButton.styleFrom(
               foregroundColor: Colors.black,
             ),
@@ -600,7 +599,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 final updatedImages = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => ProfileImageSlider(initialImages: images),
+                                    builder: (context) =>BlackProfileImageSlider(initialImages: images),
                                   ),
                                 );
                                 if (updatedImages != null) {
@@ -629,12 +628,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(width: 100),
                             IconButton(
-                              icon: const Icon(Icons.sunny, color: Colors.white),
+                              icon: const Icon(Icons.nightlight, color: Colors.white),
                               onPressed: () {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) => BlackHomeScreen()),
+                                      builder: (context) => HomeScreen()),
                                 );
                               },
                             ),
@@ -666,30 +665,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 Expanded(
                   child: Material(
-                    color: Colors.white,
+                    color: Colors.black,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Divider(),
                         ListTile(
-                          leading: const Icon(Icons.person),
-                          title: const Text("Account"),
+                          leading: const Icon(Icons.person, color: Colors.white,),
+                          title: const Text("Account",
+                            style: TextStyle(color: Colors.white),
+                          ),
                           onTap: () async {
                             await Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const UserProfileScreen()),
+                              MaterialPageRoute(builder: (context) => const BlackUserProfileScreen()),
                             );
                             setState(() {});
                           },
                         ),
                         ListTile(
-                          leading: const Icon(Icons.person_add),
-                          title: const Text("Add Account"),
+                          leading: const Icon(Icons.person_add, color: Colors.white,),
+                          title: const Text("Add Account",
+                            style: TextStyle(color: Colors.white),),
                           onTap: () {
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => const Signup()),
+                                  builder: (context) => const BlackSignup()),
                             );
                           },
                         ),
@@ -704,7 +706,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             await deleteaccount();
                             Navigator.pushReplacement(
                               context,
-                              MaterialPageRoute(builder: (context) => const Signup()),
+                              MaterialPageRoute(builder: (context) => const BlackSignup()),
                             );
                           },
                         ),
@@ -716,7 +718,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => const Signup()), //go to welcome page
+                                  builder: (context) => const BlackSignup()), //go to welcome page
                             );
                           },
                         ),
@@ -742,18 +744,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFEDEDED),
-      /*appBar: AppBar(
-        title: const Text("MC20 🎵"),
-        centerTitle: true,
-        backgroundColor: Color(0xFFFFA6A6),
-        foregroundColor: Colors.black,
-      ),*/
+      backgroundColor: Color(0xFF3B3B3B),
       body: SafeArea(
-        //padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            //const SizedBox(height: 16),
             Row(
               spacing: 10,
               children: [
@@ -763,9 +757,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     onChanged: updateSearch,
                     decoration: InputDecoration(
                       labelText: "Search",
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(Icons.search,color: Colors.white,),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Colors.black38,
                       contentPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(40),
@@ -782,11 +776,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 8),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Colors.black,
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.menu),
+                    icon: const Icon(Icons.menu,color: Colors.white,),
                     onPressed: () {
                       _showSidePanel(context);
                     },
@@ -805,7 +799,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => LikedSongsScreen(allSongs: allSongs),
+                          builder: (context) => BlackLikedSongsScreen(allSongs: allSongs),
                         ),
                       );
                     },
@@ -830,7 +824,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: ElevatedButton(
                     onPressed: showCreatePlaylistDialog,
                     style: ElevatedButton.styleFrom(
-                      //width: 20,
                       backgroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 40),
                       shape: RoundedRectangleBorder(
@@ -842,9 +835,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontSize: 16,
                         color:Colors.black,
                       ),
-                      //لازمه کل این کادر به صورت دکمه بشه
-                      // onPressed: showCreatePlaylistDialog,
-                      // و این کارو بکنه
                     ),
                   ),
                 ),
@@ -855,7 +845,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => RecentlyPlayedScreen(allSongs: allSongs),
+                          builder: (context) => BlackRecentlyPlayedScreen(allSongs: allSongs),
                         ),
                       );
                     },
@@ -871,19 +861,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontSize: 16,
                         color:Colors.white,
                       ),
-                      /*IconButton(
-                      icon: const Icon(Icons.history),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                RecentlyPlayedScreen(allSongs: allSongs),
-                          ),
-                        );
-                      },
-                    ),*/
-                      //این کد یه جورایی میاد اینجا
                     ),
                   ),
                 ),
@@ -894,7 +871,7 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 PopupMenuButton<SongSortType>(
-                  icon: const Icon(Icons.sort),
+                  icon: const Icon(Icons.sort,color: Colors.white,),
                   onSelected: (value) => updateSort(value),
                   itemBuilder: (context) => [
                     const PopupMenuItem(
@@ -923,7 +900,10 @@ class _HomeScreenState extends State<HomeScreen> {
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : filteredSongs.isEmpty
-                  ? const Center(child: Text("آهنگی یافت نشد"))
+                  ? const Center(
+                child: Text("آهنگی یافت نشد",
+                  style: TextStyle(color: Colors.white),),
+              )
                   : ListView.builder(
                 itemCount: filteredSongs.length,
                 itemBuilder: (context, index) {
@@ -955,7 +935,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               onPressed: () => toggleLike(song),
                             ),
                           PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert),
+                            icon: const Icon(Icons.more_vert, color: Colors.white,),
                             onSelected: (value) {
                               switch (value) {
                                 case 'share':
@@ -994,7 +974,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
-                                PlayerScreen(audioService: audioService),
+                                BlackPlayerScreen(audioService: audioService),
                           ),
                         );
                       },
@@ -1086,14 +1066,14 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: audioService.currentSong == null
           ? null
           : Container(
-        color: Colors.white,
+        color: Colors.black,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: GestureDetector(
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => PlayerScreen(audioService: audioService),
+                builder: (context) => BlackPlayerScreen(audioService: audioService),
               ),
             );
           },

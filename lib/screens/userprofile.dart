@@ -55,7 +55,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         content: const Text('Profile updated successfully'),
         backgroundColor: Theme.of(context).colorScheme.secondary,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
       ),
     );
   }
@@ -73,7 +73,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+      extendBodyBehindAppBar: true, // بک‌گراند بره پشت اپ‌بار هم
+      backgroundColor: Colors.transparent,
+      //backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       appBar: AppBar(
         title: const Text('User Profile'),
         actions: [
@@ -98,101 +100,118 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           )
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20),
-          child: Column(
-            children: [
-              GestureDetector(
-                onTap: _isEditing ? _pickImage : null,
-                child: CircleAvatar(
-                  radius: 60,
-                  backgroundImage: _profileImage != null
-                      ? FileImage(_profileImage!)
-                      : const AssetImage('assets/default_avatar.png')
-                  as ImageProvider,
-                  child: _isEditing
-                      ? const Align(
-                    alignment: Alignment.bottomRight,
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.red,
+                  Colors.white,
+                ],
+                stops: [0.2, 1.0],
+              ),
+            ),
+          ),
+          SafeArea(
+            key: _formKey,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: _isEditing ? _pickImage : null,
                     child: CircleAvatar(
-                      radius: 20,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.camera_alt, size: 20),
+                      radius: 60,
+                      backgroundImage: _profileImage != null
+                          ? FileImage(_profileImage!)
+                          : const AssetImage('assets/default_avatar.png')
+                      as ImageProvider,
+                      child: _isEditing
+                          ? const Align(
+                        alignment: Alignment.bottomRight,
+                        child: CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.white,
+                          child: Icon(Icons.camera_alt,color: Colors.black,),
+                        ),
+                      )
+                          : null,
                     ),
-                  )
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 20),
+                  ),
+                  const SizedBox(height: 20),
 
-              TextFormField(
-                controller: _controllerUsername,
-                enabled: _isEditing,
-                decoration: InputDecoration(
-                  labelText: "Username",
-                  prefixIcon: const Icon(Icons.person_outline),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-                validator: (value) =>
-                value == null || value.isEmpty ? 'Enter username' : null,
-              ),
-              const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _controllerUsername,
+                    enabled: _isEditing,
+                    decoration: InputDecoration(
+                      labelText: "Username",
+                      prefixIcon: const Icon(Icons.person_outline),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(40)),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(40)),
+                    ),
+                    validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter username' : null,
+                  ),
+                  const SizedBox(height: 10),
 
-              TextFormField(
-                controller: _controllerEmail,
-                enabled: _isEditing,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: "Email",
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Enter email';
-                  } else if (!(value.contains('@') && value.contains('.'))) {
-                    return 'Invalid email';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 10),
-
-              TextFormField(
-                controller: _controllerPassword,
-                enabled: _isEditing,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: "Password",
-                  prefixIcon: const Icon(Icons.password_outlined),
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscurePassword
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
+                  TextFormField(
+                    controller: _controllerEmail,
+                    enabled: _isEditing,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: "Email",
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(40)),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(40)),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Enter email';
+                      } else if (!(value.contains('@') && value.contains('.'))) {
+                        return 'Invalid email';
+                      }
+                      return null;
                     },
                   ),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-                validator: (value) =>
-                value == null || value.isEmpty ? 'Enter password' : null,
+                  const SizedBox(height: 10),
+
+                  TextFormField(
+                    controller: _controllerPassword,
+                    enabled: _isEditing,
+                    obscureText: _obscurePassword,
+                    decoration: InputDecoration(
+                      labelText: "Password",
+                      prefixIcon: const Icon(Icons.password_outlined),
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(40)),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(40)),
+                    ),
+                    validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter password' : null,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

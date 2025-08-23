@@ -7,16 +7,16 @@ import '../screens/player.dart';
 import '../service/audio.dart';
 import '../service/playlist.dart';
 
-class PlaylistDetailsScreen extends StatefulWidget {
+class BlackPlaylistDetailsScreen extends StatefulWidget {
   final Playlist playlist;
 
-  const PlaylistDetailsScreen({Key? key, required this.playlist}) : super(key: key);
+  const BlackPlaylistDetailsScreen({Key? key, required this.playlist}) : super(key: key);
 
   @override
-  State<PlaylistDetailsScreen> createState() => _PlaylistDetailsScreenState();
+  State<BlackPlaylistDetailsScreen> createState() => _PlaylistDetailsScreenState();
 }
 
-class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
+class _PlaylistDetailsScreenState extends State<BlackPlaylistDetailsScreen> {
   final AudioService audioService = AudioService();
   final SocketService socketService = SocketService();
   late PlaylistService playlistService;
