@@ -1,123 +1,116 @@
 package org.example;
 
-//import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-public class PlayList {
+public class Playlist {
     private int id;
     private String name;
-    private User user;
-    //private LocalDateTime creationTime;
-    public boolean likeplaylist = false;
-    private List<Song> music;
-    private List<Artist> artists;
+    private User owner;              // فقط یک مالک
+    private List<Song> songs;        // آهنگ‌ها
+    private List<Artist> artists;    // خواننده‌ها
+    private boolean liked = false;   // مثلا برای Favorite
+    private boolean readOnly = false; // 🔹 برای کاربرهای غیرمالک
 
-    public PlayList(int id, String name, User user) {
-        this.music=new ArrayList<>();
+    // 🔹 سازنده
+    public Playlist(int id, String name, User owner) {
         this.id = id;
         this.name = name;
-        this.user = user;
+        this.owner = owner;
+        this.songs = new ArrayList<>();
+        this.artists = new ArrayList<>();
     }
 
-    public PlayList(){
-        this.music=new ArrayList<>();
+    // 🔹 سازنده با readonly
+    public Playlist(int id, String name, User owner, boolean readOnly) {
+        this(id, name, owner);
+        this.readOnly = readOnly;
     }
 
-    public int getId() {
-        return id;
+    // 🔹 سازنده خالی
+    public Playlist() {
+        this.songs = new ArrayList<>();
+        this.artists = new ArrayList<>();
     }
 
-    public String getName() {
-        return name;
-    }
+    // --- Getter & Setter ---
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
-    public User getUser() {
-        return user;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public void setId(int id) {
-        this.id = id;
-    }
+    public User getOwner() { return owner; }
+    public void setOwner(User owner) { this.owner = owner; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public List<Song> getSongs() { return songs; }
+    public void setSongs(List<Song> songs) { this.songs = songs; }
 
-    public void setUser(User user) {
-        this.user = user;
-    }
-    
-    public void setSongs(List<Song> songs) {
-    this.music = songs;
-}
+    public List<Artist> getArtists() { return artists; }
 
+    public boolean isLiked() { return liked; }
+    public void setLiked(boolean liked) { this.liked = liked; }
 
-    public List<Song> getMusics(){
-        return music;
-    }
+    public boolean isReadOnly() { return readOnly; }
+    public void setReadOnly(boolean readOnly) { this.readOnly = readOnly; }
 
-    public int getNumberOfMusics(){
-        return music.size();
-    }
-
+    // --- مدیریت آهنگ‌ها ---
     public void addSong(Song song) {
-        music.add(song);
-        for(int i=0;i<artists.size();i++) {
-            if(song.getArtist().getName().equals(artists.get(i).getName())) {
-                song.getArtist().getMusics().add(music.get(i));
-                song.getArtist().setNumOfSongs(song.getArtist().getNumOfSongs()+1);
+        if (readOnly) return; // 🔹 جلوگیری از تغییر
+        songs.add(song);
+        Artist artist = song.getArtist();
+
+        if (artist != null) {
+            if (!artists.contains(artist)) {
+                artists.add(artist);
             }
-            else if(i==artists.size()-1) {
-                artists.add(song.getArtist());
-                song.getArtist().getMusics().add(music.get(i));
-            }
+            artist.getMusics().add(song);
+            artist.setNumOfSongs(artist.getNumOfSongs() + 1);
         }
     }
 
     public void removeSong(Song song) {
-        music.remove(song);
-        song.getArtist().getMusics().remove(song);
-        song.getArtist().setNumOfSongs(song.getArtist().getNumOfSongs()-1);
-        artists.remove(song.getArtist());
+        if (readOnly) return; // 🔹 جلوگیری از تغییر
+        songs.remove(song);
+
+        Artist artist = song.getArtist();
+        if (artist != null) {
+            artist.getMusics().remove(song);
+            artist.setNumOfSongs(artist.getNumOfSongs() - 1);
+
+            boolean stillExists = songs.stream()
+                    .anyMatch(s -> s.getArtist() != null && s.getArtist().equals(artist));
+            if (!stillExists) {
+                artists.remove(artist);
+            }
+        }
     }
 
-    public List<Artist> getArtists(){
-        return artists;
-    }
-
-    public void setLikeplaylist(boolean likeplaylist) {
-        this.likeplaylist = likeplaylist;
-    }
-
-    public void dislikeplaylist(){
-        this.likeplaylist=false;
-    }
-
-    public void likedplaylist() {
-        this.setLikeplaylist(true);
+    public int getNumberOfSongs() {
+        return songs.size();
     }
 
     public void rename(String newName) {
-        this.setName(newName);
+        if (!readOnly) {
+            this.name = newName;
+        }
     }
 
-    public void shareWith(User user) {
-
+    public boolean canUserEdit(User user) {
+        return this.owner != null && this.owner.equals(user) && !this.readOnly;
     }
 
     @Override
     public boolean equals(Object o) {
+        if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        PlayList playList = (PlayList) o;
-        return id == playList.id && likeplaylist == playList.likeplaylist && Objects.equals(name, playList.name) &&
-                Objects.equals(music, playList.music) && Objects.equals(artists, playList.artists);
+        Playlist playlist = (Playlist) o;
+        return id == playlist.id;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, user, likeplaylist, music, artists);
+        return Objects.hash(id);
     }
 }

@@ -1,9 +1,9 @@
-[
-  {
-    "id": "c3707a30-6858-4c63-8634-e986655787e8",
+{
+  "amirabbasamadeh": {
+    "id": "328aa190-6631-4fdc-b95e-a6da8d2bc117",
     "username": "amirabbasamadeh",
-    "email": "amirabbasamadeh@gmail.com",
-    "password": "3d66f31308c7159b94a83d1a81f1844e457b797292fa6b7918099813b9ef41e1",
+    "email": "amirabbasamadeh1@gmail.com",
+    "password": "1234567A",
     "profilePicturePaths": [],
     "songs": [],
     "playlists": [],
@@ -11,4 +11,4 @@
     "likedArtists": [],
     "canReceiveShares": true
   }
-]
+}
