@@ -18,6 +18,12 @@ public class User {
 
     private boolean canReceiveShares = true;
 
+    private boolean admin = false;
+
+public boolean isAdmin() { return admin; }
+public void setAdmin(boolean admin) { this.admin = admin; }
+
+
     public User(String id, String username, String email, String password) {
         this.id = id;
         this.username = username;
@@ -81,16 +87,18 @@ public class User {
     }
 
     public void addPlaylist(Playlist playlist) {
-        if (!playlists.contains(playlist)) {
-            playlists.add(playlist);
-        }
+    if (!playlists.contains(playlist)) {
+        playlists.add(playlist);
+        playlist.setOwnerUsername(this.username);
     }
+}
 
-    public void removePlaylist(Playlist playlist) {
-        if (playlist.getOwner() != null && playlist.getOwner().equals(this)) {
-            playlists.remove(playlist);
-        }
+public void removePlaylist(Playlist playlist) {
+    if (playlist.getOwnerUsername() != null && playlist.getOwnerUsername().equals(this.email)) {
+        playlists.remove(playlist);
     }
+}
+
 
     public void likeSong(Song song) {
         if (!likedSongs.contains(song)) {

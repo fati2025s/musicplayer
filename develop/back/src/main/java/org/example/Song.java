@@ -160,4 +160,7 @@ public class Song {
     public int hashCode() {
         return Objects.hash(id, name, text, artist, album);
     }
+
+    public void setLikeCount(int i) {
+    }
 }

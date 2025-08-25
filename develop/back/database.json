@@ -6,9 +6,137 @@
     "password": "1234567A",
     "profilePicturePaths": [],
     "songs": [],
+    "playlists": [
+      {
+        "id": 1,
+        "name": "hi",
+        "songs": [],
+        "artists": [],
+        "liked": false,
+        "readOnly": false,
+        "shared": false
+      },
+      {
+        "id": 1,
+        "name": "hello",
+        "songs": [],
+        "artists": [],
+        "liked": false,
+        "readOnly": false,
+        "shared": false
+      },
+      {
+        "id": 1,
+        "name": "my",
+        "ownerUsername": "amirabbasamadeh1@gmail.com",
+        "songs": [],
+        "artists": [],
+        "liked": false,
+        "readOnly": false,
+        "shared": false
+      },
+      {
+        "id": 2,
+        "name": "man",
+        "ownerUsername": "amirabbasamadeh1@gmail.com",
+        "songs": [],
+        "artists": [],
+        "liked": false,
+        "readOnly": false,
+        "shared": false
+      },
+      {
+        "id": 1,
+        "name": "ihope",
+        "ownerUsername": "amirabbasamadeh1@gmail.com",
+        "songs": [],
+        "artists": [],
+        "liked": false,
+        "readOnly": false,
+        "shared": false
+      }
+    ],
+    "likedSongs": [],
+    "likedArtists": [],
+    "canReceiveShares": true,
+    "admin": false
+  },
+  "amirabbass": {
+    "id": "c22864a0-886a-4cb0-ad81-bace3c034c6f",
+    "username": "amirabbass",
+    "email": "amiraliamad@gmail.com",
+    "password": "1234567A",
+    "profilePicturePaths": [],
+    "songs": [],
     "playlists": [],
     "likedSongs": [],
     "likedArtists": [],
-    "canReceiveShares": true
+    "canReceiveShares": true,
+    "admin": false
+  },
+  "amirmohammad": {
+    "id": "17864e65-5c84-47e5-a73f-45f9ddef17af",
+    "username": "amirmohammad",
+    "email": "amirmohammad@gmail.com",
+    "password": "1234567A",
+    "profilePicturePaths": [],
+    "songs": [],
+    "playlists": [],
+    "likedSongs": [],
+    "likedArtists": [],
+    "canReceiveShares": true,
+    "admin": false
+  },
+  "amirabbasamadeh2": {
+    "id": "9041dda0-f204-4067-94ed-8496accafe6a",
+    "username": "amirabbasamadeh2",
+    "email": "amirabbasamadeh1@gmail.com",
+    "password": "1234567A",
+    "profilePicturePaths": [],
+    "songs": [],
+    "playlists": [],
+    "likedSongs": [],
+    "likedArtists": [],
+    "canReceiveShares": true,
+    "admin": false
+  },
+  "amirreaza": {
+    "id": "f62c7d26-024c-4320-bec1-8195b8f55ca2",
+    "username": "amirreaza",
+    "email": "amiramadeh1@gmail.com",
+    "password": "1234567A",
+    "profilePicturePaths": [],
+    "songs": [],
+    "playlists": [],
+    "likedSongs": [],
+    "likedArtists": [],
+    "canReceiveShares": true,
+    "admin": false
+  },
+  "amirsina": {
+    "id": "cc754257-d877-49a3-a341-b1602c7b3f03",
+    "username": "amirsina",
+    "email": "amirsinaamadeh@gmail.com",
+    "password": "1234567A",
+    "profilePicturePaths": [],
+    "songs": [],
+    "playlists": [],
+    "likedSongs": [],
+    "likedArtists": [],
+    "canReceiveShares": true,
+    "admin": false
+  },
+  "amirabbasamadeh23": {
+    "id": "490ada1c-242a-427d-963f-230da7314644",
+    "username": "amirabbasamadeh23",
+    "email": "battleangel1@gmail.com",
+    "password": "1234567A",
+    "profilePicturePaths": [],
+    "songs": [],
+    "playlists": [],
+    "likedSongs": [],
+    "likedArtists": [],
+    "canReceiveShares": true,
+    "admin": false
   }
 }

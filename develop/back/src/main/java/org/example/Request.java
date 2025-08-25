@@ -11,7 +11,7 @@ public class Request {
 
     public Request(String type, JsonObject payload, String requestId) {
         this.type = type;
-        this.payload = payload;
+        this.payload = (payload != null) ? payload : new JsonObject();
         this.requestId = requestId;
     }
 
@@ -19,12 +19,24 @@ public class Request {
         return type;
     }
 
+    public void setType(String type) {
+        this.type = type;
+    }
+
     public JsonObject getPayload() {
         return payload;
     }
 
+    public void setPayload(JsonObject payload) {
+        this.payload = (payload != null) ? payload : new JsonObject();
+    }
+
     public String getRequestId() {
         return requestId;
+    }
+
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
     }
 
     @Override
