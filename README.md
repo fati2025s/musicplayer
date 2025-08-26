@@ -10,11 +10,15 @@ The main focus of Mc20 is to deliver a **modern, responsive mobile UI** built wi
 
 ## Features & Screenshots
 
-### Welcome & Login / Signup Pages
+### Welcome Page
 
 ![Welcome Page](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/WelcomePage.jpg)
 
+### Login Page
+
 ![Login Page](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/Login.jpg)  ![Login Page](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/Login1.jpg)
+
+### Signup Page
 
 ![Signup Page](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/Signup.jpg)  ![Signup Page](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/Signup1.jpg)
 
