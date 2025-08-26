@@ -14,7 +14,8 @@ class PlaylistService {
     final playlist = Playlist(
       id: Random().nextInt(100000),
       name: name,
-      songs: songs,
+      likeplaylist: false,
+      music: songs,
     );
 
     final request = {

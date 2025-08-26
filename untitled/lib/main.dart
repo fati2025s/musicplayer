@@ -1,10 +1,5 @@
-import 'package:untitled/screens/BlackHomeScreen.dart';
-import 'package:untitled/screens/Login.dart';
 import 'package:flutter/material.dart';
-import 'package:untitled/screens/HomeScreen.dart';
-import 'package:untitled/screens/Signup.dart';
-import 'package:untitled/screens/Login.dart';
-import 'package:untitled/screens/HomeScreen.dart';
+import 'package:untitled/screens/WelcomePage.dart';
 import 'theme/theme.dart';
 
 void main() {
@@ -19,7 +14,7 @@ class NovakApp extends StatelessWidget {
     return MaterialApp(
       title: 'Novak',
       theme: appTheme,
-      home: Signup(),
+      home: WelcomePage(),
     );
   }
 }

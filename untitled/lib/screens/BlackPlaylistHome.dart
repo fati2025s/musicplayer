@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:untitled/models/playlist.dart';
 import 'package:untitled/screens/blackplaylistdetail.dart';
+import 'package:untitled/screens/singelton.dart';
 
 class BlackPlaylistsHome extends StatefulWidget {
   final List<Playlist> allplaylists;
@@ -29,10 +30,9 @@ class _PlaylistsHomeState extends State<BlackPlaylistsHome> {
   }
 
   Future<void> _addplaylist() async {
-    print("hi");
-    final name = _controllername.text;
+    final name = _controllername.text.trim();
     if (name.isEmpty) {
-      setState(() => message = "name is invalid");
+      setState(() => message = "Name is invalid");
       return;
     }
 
@@ -43,46 +43,35 @@ class _PlaylistsHomeState extends State<BlackPlaylistsHome> {
         "name": name,
       }
     };
-    final jsonString = json.encode(requestBody) + '\n';
 
     try {
-      var socket = await Socket.connect("172.20.98.97", 8080);
-      StringBuffer responseText = StringBuffer();
-      final completer = Completer<String>();
+      final socketService = singelton();
 
-      socket.write(jsonString);
-      await socket.flush();
+      if (!socketService.isConnected) {
+        await socketService.connect("10.208.175.99", 8080);
+      }
 
-      socket
-          .cast<List<int>>()
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen((data) {
-        responseText.write(data);
-        if (data.contains("end")) {
-          socket.close();
-          completer.complete(responseText.toString());
-        }
-      }, onError: (error) {
-        if (!completer.isCompleted) completer.completeError(error);
-      }, onDone: () {
-        if (!completer.isCompleted) {
-          completer.complete(responseText.toString());
-        }
-      }, cancelOnError: true);
+      final responseJson = await socketService.sendAndReceive(requestBody);
 
-      final result = await completer.future;
-      final Map<String, dynamic> responseJson =
-      json.decode(result.replaceAll("end", ""));
-
-      if (responseJson["success"] == "success") {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool("addplaylistStatus", true);
-        await prefs.setString("Name", name);
-      } else {
+      if (responseJson["status"] == "success") {
         setState(() {
-          message = responseJson["message"] ?? "add playlist failed.";
+          /*playlists.add(
+            Playlist(
+              id: DateTime.now().millisecondsSinceEpoch,
+              name: name,
+              songs: [],
+            ),
+          );*/
         });
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BlackPlaylistsHome(allplaylists: playlists),
+          ),
+        );
+      } else {
+        setState(() => message = responseJson["message"] ?? "Add playlist failed.");
       }
     } catch (e) {
       setState(() => message = "Connection failed: $e");
@@ -116,7 +105,8 @@ class _PlaylistsHomeState extends State<BlackPlaylistsHome> {
                     Playlist(
                       id: DateTime.now().millisecondsSinceEpoch,
                       name: name,
-                      songs: [],
+                      likeplaylist: false,
+                      music: [],
                     ),
                   );
                 });

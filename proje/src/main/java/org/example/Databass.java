@@ -18,7 +18,7 @@ public class Databass {
 
     public Databass() {
         try{
-            File file = new File("user.json");
+            File file = new File("data.json");
 
             if(!file.exists()){
                 file.createNewFile();
@@ -46,7 +46,7 @@ public class Databass {
 
     public void write(List<User> users) {
         try {
-            FileWriter fileWriter = new FileWriter("user.json",false);
+            FileWriter fileWriter = new FileWriter("data.json",false);
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
             Gson gsonPretty = new GsonBuilder().setPrettyPrinting().create();
             gsonPretty.toJson(users, bufferedWriter);
@@ -102,6 +102,7 @@ public class Databass {
 
     public void addUser(User user) {
         users.add(user);
+        System.out.println(users.size());
         write(users);
     }
 
@@ -153,25 +154,39 @@ public class Databass {
         }
     }
 
-    public void addlikesong(Song song,User user) {
+    public Song fingmusicid(User user,int id) {
         for (User user1 : users) {
             if (user1.getUsername().equals(user.getUsername())) {
-                user1.getLikedSongs().add(song);
-                write(users);
-                break;
+                for(Song song : user1.getSongs()) {
+                    if(song.getId() == id) {
+                        return song;
+                    }
+                }
             }
         }
+        return null;
     }
 
-    public void deletlikesong(Song song,User user) {
-        for (User user1 : users) {
-            if (user1.getUsername().equals(user.getUsername())) {
-                user1.getLikedSongs().remove(song);
+    public boolean toggleLike(User user, int musicId) {
+        Song song = fingmusicid(user,musicId);
+        for (User u : users) {
+            if (u.getUsername().equals(user.getUsername())) {
+                if (u.getLikedSongs() == null) {
+                    u.setLikedSongs(new ArrayList<>());
+                }
+                if (song != null) {
+                    u.getLikedSongs().remove(song); // unlike
+                } else {
+                    u.getLikedSongs().add(song); // like
+                }
+
                 write(users);
-                break;
+                return true;
             }
         }
+        return false;
     }
+
 
     public void removemusic(Song song,User user) {
         for(User user1 : users) {
@@ -204,6 +219,7 @@ public class Databass {
         for(User user1 : users) {
             if (user1.getUsername().equals(user.getUsername())) {
                 user1.getPlaylists().add(playlist);
+                user1.setPlaylists(user1.getPlaylists());
                 write(users);
                 break;
             }
@@ -220,13 +236,56 @@ public class Databass {
         }
     }
 
-    public void addprofile(File file, User user) {
-        user.getProfilePicturePath().add(file);
-        write(users);
+    public synchronized boolean addProfilePath(String filePath, User user) {
+        for (User u : users) {
+            if (u.getUsername().equals(user.getUsername())) {
+                if (u.getProfilePicturePath() == null) u.setProfilePicturePath(new ArrayList<>());
+                if (!u.getProfilePicturePath().contains(filePath)) {
+                    u.getProfilePicturePath().add(filePath);
+                    if (u.getCurrentProfileIndex() == null || u.getCurrentProfileIndex() < 0) {
+                        u.setCurrentProfileIndex(u.getProfilePicturePath().size() - 1);
+                    }
+                    write(users);
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
-    public void removeprofile(File file, User user) {
-        user.getProfilePicturePath().remove(file);
-        write(users);
+    public synchronized boolean removeProfilePath(String filePath, User user) {
+        for (User u : users) {
+            if (u.getUsername().equals(user.getUsername())) {
+                if (u.getProfilePicturePath() == null) u.setProfilePicturePath(new ArrayList<>());
+                boolean removed = u.getProfilePicturePath().remove(filePath);
+                if (removed) {
+                    if (u.getCurrentProfileIndex() != null) {
+                        if (u.getProfilePicturePath().isEmpty()) {
+                            u.setCurrentProfileIndex(-1);
+                        } else if (u.getCurrentProfileIndex() >= u.getProfilePicturePath().size()) {
+                            u.setCurrentProfileIndex(u.getProfilePicturePath().size() - 1);
+                        }
+                    }
+                    write(users);
+                }
+                return removed;
+            }
+        }
+        return false;
+    }
+
+    public synchronized boolean setCurrentProfileIndex(User user, int index) {
+        for (User u : users) {
+            if (u.getUsername().equals(user.getUsername())) {
+                if (u.getProfilePicturePath() == null || u.getProfilePicturePath().isEmpty())
+                    return false;
+                if (index < 0 || index >= u.getProfilePicturePath().size())
+                    return false;
+                u.setCurrentProfileIndex(index);
+                write(users);
+                return true;
+            }
+        }
+        return false;
     }
 }

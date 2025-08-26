@@ -10,6 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:untitled/screens/singelton.dart';
 
+import '../models/user.dart';
+
 class Signup extends StatefulWidget {
   const Signup({super.key});
 
@@ -78,7 +80,7 @@ class _SignupState extends State<Signup> {
 
     try {
       final socketService = singelton();
-      await socketService.connect("172.20.98.97", 8080);
+      await socketService.connect("10.208.175.99", 8080);
 
       socketService.listen((responseJson) {
         setState(() {
@@ -86,9 +88,10 @@ class _SignupState extends State<Signup> {
         });
 
         if (responseJson["status"] == "success") {
+          final user = User.fromJson(responseJson["data"]["user"]);
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => HomeScreen()),
+            MaterialPageRoute(builder: (context) => HomeScreen(currentu: user)),
           );
         }
       });
@@ -213,6 +216,9 @@ class _SignupState extends State<Signup> {
                         final passwordRegex =
                         RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$');
                         if (!passwordRegex.hasMatch(value)) {
+                          return "Invalid.";
+                        }
+                        if(value.contains(_controllerUsername.text)){
                           return "Invalid.";
                         }
                         return null;

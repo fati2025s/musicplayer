@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:untitled/models/playlist.dart';
 import 'package:untitled/screens/blackplaylistdetail.dart';
 import 'package:untitled/screens/playlistdetail.dart';
+import 'package:untitled/screens/singelton.dart';
 
 class PlaylistsHome extends StatefulWidget {
   final List<Playlist> allplaylists;
@@ -27,67 +28,6 @@ class _PlaylistsHomeState extends State<PlaylistsHome> {
   void initState() {
     super.initState();
     playlists = widget.allplaylists;
-  }
-
-  Future<void> _addplaylist() async {
-    print("hi");
-    final name = _controllername.text;
-    if (name.isEmpty) {
-      setState(() => message = "name is invalid");
-      return;
-    }
-
-    final requestBody = {
-      "type": "addPlaylist",
-      "payload": {
-        "id": Random().nextInt(100000),
-        "name": name,
-      }
-    };
-    final jsonString = json.encode(requestBody) + '\n';
-
-    try {
-      var socket = await Socket.connect("172.20.98.97", 8080);
-      StringBuffer responseText = StringBuffer();
-      final completer = Completer<String>();
-
-      socket.write(jsonString);
-      await socket.flush();
-
-      socket
-          .cast<List<int>>()
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen((data) {
-        responseText.write(data);
-        if (data.contains("end")) {
-          socket.close();
-          completer.complete(responseText.toString());
-        }
-      }, onError: (error) {
-        if (!completer.isCompleted) completer.completeError(error);
-      }, onDone: () {
-        if (!completer.isCompleted) {
-          completer.complete(responseText.toString());
-        }
-      }, cancelOnError: true);
-
-      final result = await completer.future;
-      final Map<String, dynamic> responseJson =
-      json.decode(result.replaceAll("end", ""));
-
-      if (responseJson["success"] == "success") {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool("addplaylistStatus", true);
-        await prefs.setString("Name", name);
-      } else {
-        setState(() {
-          message = responseJson["message"] ?? "add playlist failed.";
-        });
-      }
-    } catch (e) {
-      setState(() => message = "Connection failed: $e");
-    }
   }
 
   void showCreatePlaylistDialog() {
@@ -111,20 +51,22 @@ class _PlaylistsHomeState extends State<PlaylistsHome> {
           ElevatedButton(
             onPressed: () async {
               final name = _controllername.text.trim();
-              if (name.isNotEmpty) {
-                setState(() {
-                  playlists.add(
-                    Playlist(
-                      id: DateTime.now().millisecondsSinceEpoch,
-                      name: name,
-                      songs: [],
-                    ),
-                  );
-                });
-              }
+              if (name.isEmpty) return;
+
+              /*setState(() {
+                playlists.add(
+                  Playlist(
+                    id: DateTime.now().millisecondsSinceEpoch,
+                    name: name,
+                    songs: [],
+                  ),
+                );
+              });*/
+
               Navigator.pop(ctx);
               await _addplaylist();
             },
+
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.black,
@@ -138,6 +80,83 @@ class _PlaylistsHomeState extends State<PlaylistsHome> {
         ],
       ),
     );
+  }
+
+  Future<void> _addplaylist() async {
+    final name = _controllername.text.trim();
+    if (name.isEmpty) {
+      setState(() => message = "Name is invalid");
+      return;
+    }
+
+    final requestBody = {
+      "type": "addPlaylist",
+      "payload": {
+        "id": Random().nextInt(100000),
+        "name": name,
+      }
+    };
+
+    try {
+      final socketService = singelton();
+
+      if (!socketService.isConnected) {
+        await socketService.connect("10.208.175.99", 8080);
+      }
+
+      final responseJson = await socketService.sendAndReceive(requestBody);
+
+      if (responseJson["status"] == "success") {
+        final newPlaylist = Playlist.fromJson(responseJson["data"]);
+        setState(() {
+          playlists.add(newPlaylist);
+        });
+      } else {
+        setState(() => message = responseJson["message"] ?? "Add playlist failed.");
+      }
+    } catch (e) {
+      setState(() => message = "Connection failed: $e");
+    }
+  }
+
+  Future<void> _deletePlaylist(int playlistId) async {
+    final requestBody = {
+      "type": "deletePlaylist",
+      "payload": {
+        "playlistId": playlistId,
+        //"userId": widget.playlist.user.id
+      }
+    };
+
+    try {
+      final socketService = singelton();
+      await socketService.connect("10.208.175.99", 8080);
+
+      socketService.listen((responseJson) {
+        setState(() {
+          message = responseJson["message"] ?? "Unknown response";
+        });
+
+        if (responseJson["status"] == "success") {
+          setState(() {
+            playlists.removeWhere((playlist) => playlist.id == playlistId);
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Playlist deleted successfully")),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Failed to delete playlist: ${responseJson["message"]}")),
+          );
+        }
+      });
+
+      socketService.send(requestBody);
+    } catch (e) {
+      setState(() {
+        message = "Connection failed: $e";
+      });
+    }
   }
 
   @override
@@ -176,17 +195,54 @@ class _PlaylistsHomeState extends State<PlaylistsHome> {
                   color: Colors.red[200],
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Center(
-                  child: Text(
-                    playlists[index].name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Text(
+                        playlists[index].name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
+                    Positioned(
+                      left: 8,
+                      bottom: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          "${playlists[index].music.length} آهنگ",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: GestureDetector(
+                        onTap: () async {
+                          await _deletePlaylist(playlists[index].id);
+                        },
+                        child: const Icon(
+                          Icons.delete,
+                          color: Colors.black,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+
             );
           }),
         ),

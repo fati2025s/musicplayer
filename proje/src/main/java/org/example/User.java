@@ -11,11 +11,13 @@ public class User {
     private String username;
     private String email;
     private String password;
-    private List<File> profilePicturePath;
+    private List<String> profilePicturePath;
     private List<Song> songs;
     private List<PlayList> playlists=new ArrayList<>();
     private List<Song> likedSongs;
     private List<Song> likedArtists=new ArrayList<>();
+    //private List<String> profilePicturePath;
+    private Integer currentProfileIndex;
 
     public User(String id, String username, String email, String password) {
         this.id = id;
@@ -25,6 +27,7 @@ public class User {
         this.profilePicturePath = new ArrayList<>();
         this.likedSongs = new ArrayList<>();
         this.songs = new ArrayList<>();
+        this.playlists = new ArrayList<>();
     }
 
     public String getId() {
@@ -43,7 +46,11 @@ public class User {
         this.songs = songs;
     }
 
-    public void setProfilePicturePath(List<File> profilePicturePath) {
+    public Integer getCurrentProfileIndex() { return currentProfileIndex; }
+
+    public void setCurrentProfileIndex(Integer i) { this.currentProfileIndex = i; }
+
+    public void setProfilePicturePath(List<String> profilePicturePath) {
         this.profilePicturePath = profilePicturePath;
     }
 
@@ -67,7 +74,7 @@ public class User {
         this.password = password;
     }
 
-    public List<File> getProfilePicturePath() {
+    public List<String> getProfilePicturePath() {
         return profilePicturePath;
     }
 

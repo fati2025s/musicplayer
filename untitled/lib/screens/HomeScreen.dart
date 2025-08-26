@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_media_metadata/flutter_media_metadata.dart';
 import 'package:untitled/screens/BlackHomeScreen.dart';
@@ -9,13 +8,12 @@ import 'package:untitled/screens/PlaylistsHome.dart';
 import 'package:untitled/screens/singelton.dart';
 import 'package:untitled/screens/userprofile.dart';
 import 'package:flutter/foundation.dart';
-import 'package:untitled/screens/PlaylistsHome.dart';
 import '../models/playlist.dart';
 import '../models/song.dart';
 import '../models/song_sort.dart';
+import '../models/user.dart';
 import '../screens/RecentlyPlayedScreen.dart';
 import '../screens/LikedSongsScreen.dart';
-import '../screens/UploadSongScreen.dart';
 import 'package:path_provider/path_provider.dart';
 import '../service/AudioService.dart';
 import '../screens/PlayerScreen.dart';
@@ -25,12 +23,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:async';
 import '../screens/ProfilePicture.dart';
-import '../screens/Login.dart';
 import '../screens/Signup.dart';
-import '../screens/Account.dart';
 import 'dart:io';
 class HomeScreen extends StatefulWidget {
-  HomeScreen({Key? key}) : super(key: key);
+  final User currentu;
+
+  HomeScreen({Key? key,required this.currentu}) : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -40,30 +38,85 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final AudioService audioService = AudioService();
   final LocalMusicService localMusicService = LocalMusicService();
-  final SocketService socketService = SocketService();
+  final singelton socketService = singelton();
   final GlobalKey<FormState> _formKey = GlobalKey();
   final TextEditingController _controllername = TextEditingController();
-
+  //StreamSubscription? _profileSubscription;
   SongSortType sortType = SongSortType.none;
   List<Song> allSongs = [];
   List<Song> filteredSongs = [];
+  List<Song> likedSongs = [];
   List<Playlist> playlists = [];
   String searchQuery = "";
   bool isLoading = false;
 
-  List<File> images=[];
+  List<String> images=[];
+  List<String> profileimage = [];
+  int currentindex = 0;
   String message = "";
-  File? _image;
+  String? currentPath;
+  String? _image;
 
   final ImagePicker _picker = ImagePicker();
 
-  void toggleLike(Song song) {
-    if (song.source == SongSource.local) return;
-    setState(() {
-      song.isLiked = !song.isLiked;
-    });
-    _toggleLikeOnServer(song);
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData(widget.currentu);
+    loadUserProfile();
   }
+
+  void loadUserProfile() async {
+    final response = await socketService.sendAndReceive({"type": "getProfileImages"});
+    if (!mounted) return;
+
+    if (response["status"] == "success") {
+      setState(() {
+        profileimage = List<String>.from(response["images"]);
+        currentindex = response["currentIndex"] ?? 0;
+      });
+    }
+  }
+
+
+  void openProfileSlider() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfileImageSlider(
+          initialImages: profileimage,
+          initialIndex: currentindex,
+          onDelete: (index) async{
+            socketService.send({
+              "type": "removeProfileImage",
+              "payload": {"index": index}
+            });
+          },
+          onSetCurrent: (index) async{
+            socketService.send({
+              "type": "setCurrentProfileImage",
+              "payload": {"index": index}
+            });
+          },
+        ),
+      ),
+    ).then((_) {
+      loadUserProfile();
+    });
+  }
+
+  void _loadUserData(User user) {
+    setState(() {
+      playlists = user.playlists;
+      allSongs = [
+        ...user.likedSongs,
+        ...user.downloadedSongs,
+      ];
+      applyFilters();
+    });
+    print(widget.currentu);
+  }
+
 
   Future<void> uploadSong(File file, Song song) async {
     if (!socketService.isConnected) {
@@ -72,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final base64File = base64Encode(await file.readAsBytes());
-    await socketService.send({
+    socketService.send({
       "type": "uploadSongFile",
       "payload": {
         "fileName": file.uri.pathSegments.last,
@@ -80,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
 
-    await socketService.send({
+    socketService.send({
       "type": "addsong",
       "payload": {
         "name": song.name,
@@ -166,142 +219,102 @@ class _HomeScreenState extends State<HomeScreen> {
     final username = prefs.getString("userName");
     final password = prefs.getString("userPassword");
 
-    if (username == null || password == null) {
-      print("❗ نام کاربری یا رمز عبور پیدا نشد.");
-      return;
+    if (username == null || password == null) return;
+
+    final socketService = singelton();
+    if (!socketService.isConnected) {
+      await socketService.connect("10.208.175.99", 8080);
     }
 
     final requestBody = {
       "type": "deleteaccount",
-      "payload": {
-        "username": username,
-        "password": password,
-      }
+      "payload": {"username": username, "password": password}
     };
 
-    final jsonString = json.encode(requestBody) + '\n';
+    socketService.listen((responseJson) async {
+      if (responseJson["type"] != "deleteaccount") return;
 
-    try {
-      var socket = await Socket.connect("172.20.98.97", 8080);
-      StringBuffer responseText = StringBuffer();
-      final completer = Completer<String>();
-
-      socket.write(jsonString);
-      await socket.flush();
-
-      socket
-          .cast<List<int>>()
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen(
-            (data) {
-          print("📥 دریافت شد: $data");
-          responseText.write(data);
-          if (data.contains("end")) {
-            socket.close();
-            completer.complete(responseText.toString());
-          }
-        },
-        onError: (error) {
-          print("❌ خطا: $error");
-          if (!completer.isCompleted) completer.completeError(error);
-        },
-        onDone: () {
-          if (!completer.isCompleted) {
-            completer.complete(responseText.toString());
-          }
-        },
-        cancelOnError: true,
-      );
-
-      final result = await completer.future;
-      final Map<String, dynamic> responseJson =
-      json.decode(result.replaceAll("end", ""));
-
-      if (responseJson["success"] == "success") {
-        print("✅ اکانت حذف شد");
+      if (responseJson["status"] == "success") {
+        final prefs = await SharedPreferences.getInstance();
         await prefs.clear();
-        Navigator.push(
+
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => Signup()),
+              (route) => false,
         );
       } else {
         print("❌ حذف نشد: ${responseJson["message"]}");
       }
-    } catch (e) {
-      print("Connection failed: $e");
-    }
+    });
+
+
+    socketService.send(requestBody);
   }
 
 
-  Future<void> _toggleLikeOnServer(Song song) async {
+  void logoutUser() async {
+    try {
+      final socketService = singelton();
+
+      if (!socketService.isConnected) {
+        await socketService.connect("10.208.175.99", 8080);
+      }
+
+      final requestBody = {
+        "type": "logout",
+        "payload": {}
+      };
+
+      socketService.listen((responseJson) async {
+
+        if (responseJson["status"] == "success") {
+
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.clear();
+
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => Signup()),
+                (route) => false,
+          );
+        }
+      });
+
+      socketService.send(requestBody);
+    } catch (e) {
+      print("❌ خطا در لاگ‌اوت: $e");
+    }
+  }
+
+  Future<void> _toggleLike(int musicId) async {
     final requestBody = {
-      "type": song.isLiked ? "addlikesong" : "deletlikesong",
+      "type": "toggleLikeMusic",
       "payload": {
-        "name": song.name,
-        "artist": song.artist,
-        "liked": song.isLiked
+        "musicId": musicId,
       }
     };
 
-    final jsonString = json.encode(requestBody) + '\n';
-
     try {
-      var socket = await Socket.connect("172.20.98.97", 8080); // IP و پورت بک
-      StringBuffer responseText = StringBuffer();
-      final completer = Completer<String>();
+      final socketService = singelton();
 
-      socket.write(jsonString);
-      await socket.flush();
+      if (!socketService.isConnected) {
+        await socketService.connect("10.244.67.99", 8080);
+      }
 
-      socket
-          .cast<List<int>>()
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen(
-            (data) {
-          print("📥 دریافت شد: $data");
-          responseText.write(data);
+      final responseJson = await socketService.sendAndReceive(requestBody);
 
-          if (data.contains("end")) {
-            socket.close();
-            completer.complete(responseText.toString());
-          }
-        },
-        onError: (error) {
-          print("❌ خطا: $error");
-          if (!completer.isCompleted) {
-            completer.completeError(error);
-          }
-        },
-        onDone: () {
-          print("📴 اتصال بسته شد");
-          if (!completer.isCompleted) {
-            completer.complete(responseText.toString());
-          }
-        },
-        cancelOnError: true,
-      );
-
-      final result = await completer.future;
-      print("result:$result");
-
-      final Map<String, dynamic> responseJson =
-      json.decode(result.replaceAll("end", ""));
-
-      if (responseJson["success"] != "success") {
-        print("❌ لایک ثبت نشد");
+      if (responseJson["status"] == "success") {
+        setState(() {
+          likedSongs = (responseJson["data"]["likedSongs"]);
+        });
       }
     } catch (e) {
       print("Connection failed: $e");
     }
   }
 
-
-  Future<void> _delete(Song song) async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
+  void _delete(Song song) async {
     final requestBody = {
       "type": "deletesong",
       "payload": {
@@ -310,120 +323,35 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     };
 
-    final jsonString = json.encode(requestBody) + '\n';
-
     try {
-      var socket = await Socket.connect("172.20.98.97", 8080);
-      StringBuffer responseText = StringBuffer();
-      final completer = Completer<String>();
+      final socketService = singelton();
+      if (!socketService.isConnected) {
+        await socketService.connect("10.208.175.99", 8080);
+      }
 
-      socket.write(jsonString);
-      await socket.flush();
+      socketService.listen((responseJson) {
+        setState(() {
+          message = responseJson["message"] ?? "Unknown response";
+        });
 
-      socket
-          .cast<List<int>>()
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen(
-            (data) {
-          print("📥 دریافت شد: $data");
-          responseText.write(data);
-
-          if (data.contains("end")) {
-            socket.close();
-            completer.complete(responseText.toString());
-          }
-        },
-        onError: (error) {
-          print("❌ خطا: $error");
-          if (!completer.isCompleted) {
-            completer.completeError(error);
-          }
-        },
-        onDone: () {
-          print("📴 اتصال بسته شد");
-          if (!completer.isCompleted) {
-            completer.complete(responseText.toString());
-          }
-        },
-        cancelOnError: true,
-      );
-
-      final result = await completer.future;
-      print("result:$result");
-      final Map<String, dynamic> responseJson =
-      json.decode(result.replaceAll("end", ""));
-
-      setState(() {
-        message = responseJson["message"] ?? "Unknown response";
+        if (responseJson["status"] == "success") {
+          setState(() {
+            allSongs.removeWhere((s) => s.name == song.name && s.artist == song.artist);
+            filteredSongs.removeWhere((s) => s.name == song.name && s.artist == song.artist);
+          });
+          print("✅ آهنگ حذف شد: ${song.name}");
+        } else {
+          print("❌ حذف نشد: ${responseJson["message"]}");
+        }
       });
 
-      if (responseJson["success"] == "success") {
-        final prefs = await SharedPreferences.getInstance();
-      }
-      else{
-        print("Faild");
-        setState(() {
-          message = responseJson["message"] ?? "delete music faild.";
-        });
-      }
-    }  catch (e) {
+      socketService.send(requestBody);
+    } catch (e) {
       setState(() {
         message = "Connection failed: $e";
       });
     }
-
   }
-
-  Future<void> _addplaylist() async {
-    final name = _controllername.text.trim();
-    if (name.isEmpty) {
-      setState(() => message = "Name is invalid");
-      return;
-    }
-
-    final requestBody = {
-      "type": "addPlaylist",
-      "payload": {
-        "id": Random().nextInt(100000),
-        "name": name,
-      }
-    };
-
-    try {
-      final socketService = singelton();
-
-      if (!socketService.isConnected) {
-        await socketService.connect("172.20.98.97", 8080);
-      }
-
-      final responseJson = await socketService.sendAndReceive(requestBody);
-
-      if (responseJson["status"] == "success") {
-        setState(() {
-          playlists.add(
-            Playlist(
-              id: DateTime.now().millisecondsSinceEpoch,
-              name: name,
-              songs: [],
-            ),
-          );
-        });
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PlaylistsHome(allplaylists: playlists),
-          ),
-        );
-      } else {
-        setState(() => message = responseJson["message"] ?? "Add playlist failed.");
-      }
-    } catch (e) {
-      setState(() => message = "Connection failed: $e");
-    }
-  }
-
 
 
   void updateSearch(String query) {
@@ -488,58 +416,35 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void showCreatePlaylistDialog() {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Create new playlist"),
-        content: TextField(
-          controller: _controllername,
-          decoration: const InputDecoration(labelText: "name"),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("cancel"),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.black,
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final name = _controllername.text.trim();
-              if (name.isEmpty) return;
+  ImageProvider getProfileImage(String? base64) {
+    if (base64 == null || base64.isEmpty) {
+      return AssetImage("assets/default_profile.png");
+    }
+    return MemoryImage(base64Decode(base64));
+  }
 
-              setState(() {
-                playlists.add(
-                  Playlist(
-                    id: DateTime.now().millisecondsSinceEpoch,
-                    name: name,
-                    songs: [],
-                  ),
-                );
-              });
+  void pickProfileImage() async {
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile == null) return;
 
-              Navigator.pop(ctx);  // اول دیالوگ بسته میشه
+    final file = File(pickedFile.path);
+    final base64Image = base64Encode(await file.readAsBytes());
 
-              // بعدش async سرور صدا زده میشه
-              await _addplaylist();
-            },
+    final response = await socketService.sendAndReceive({
+      "type": "uploadProfileImage",
+      "payload": {
+        "fileName": file.uri.pathSegments.last,
+        "base64Data": base64Image,
+      }
+    });
 
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(40),
-              ),
-            ),
-            child: const Text("create"),
-          ),
-        ],
-      ),
-    );
+    if (!mounted) return;
+    if (response["status"] == "success") {
+      setState(() {
+        profileimage.add(response["data"]["base64"]); // فرض بر اینه سرور base64 برمیگردونه
+        currentindex = profileimage.length - 1;
+      });
+    }
   }
 
   void _showSidePanel(BuildContext context) {
@@ -553,8 +458,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return Align(
           alignment: Alignment.centerRight,
-          child: Container(
-            height: height,
+          child: SafeArea(
+            child:Container(
             width: width * 0.75,
             decoration: const BoxDecoration(
               borderRadius: BorderRadius.only(
@@ -570,6 +475,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.max,
               children: [
                 Container(
                   height: height * 0.2,
@@ -583,56 +489,42 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Column(
                     children: [
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 5),
                       Row(
                           textDirection: TextDirection.rtl,
                           children: [
                             GestureDetector(
-                              onTap: () async {
-                                final updatedImages = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ProfileImageSlider(initialImages: images),
-                                  ),
-                                );
-                                if (updatedImages != null) {
-                                  setState(() {
-                                    images = List<File>.from(updatedImages);
-                                    _image =
-                                    images.isNotEmpty ? images.last : null;
-                                  });
-                                }
-                              },
+                              onTap: openProfileSlider,
                               child: CircleAvatar(
                                 radius: 30,
-                                backgroundImage: images.isNotEmpty
-                                    ? FileImage(_image!) as ImageProvider
-                                    : const AssetImage('assets/profile.jpg'),
+                                backgroundImage: currentPath != null
+                                    ? NetworkImage(currentPath!)
+                                    : AssetImage("assets/default_profile.png") as ImageProvider,
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 5),
                             Text(
-                              "نام",
+                              widget.currentu.username,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(width: 100),
+                            const SizedBox(width: 60),
                             IconButton(
                               icon: const Icon(Icons.sunny, color: Colors.white),
                               onPressed: () {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) => BlackHomeScreen()),
+                                      builder: (context) => BlackHomeScreen(currentuser: widget.currentu)),
                                 );
                               },
                             ),
                           ]
                       ),
-                      const SizedBox(height: 15),
+                      //const SizedBox(height: 5),
                       Row(
                         children: [
                           IconButton(
@@ -640,18 +532,62 @@ class _HomeScreenState extends State<HomeScreen> {
                             onPressed: () async {
                               final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
                               if (pickedFile != null) {
+                                final base64Image = base64Encode(await File(pickedFile.path).readAsBytes());
+
+                                if (!mounted) return;
                                 setState(() {
-                                  _image = File(pickedFile.path);
+                                  _image = base64Image;
+                                  images.add(base64Image);
                                 });
-                                print("عکس انتخاب شد: ${pickedFile.path}");
-                                images.add(_image!);
+
+                                final response = await socketService.sendAndReceive({
+                                  "type": "uploadProfileImage",
+                                  "payload": {
+                                    "fileName": pickedFile.name,
+                                    "base64Data": base64Image,
+                                  }
+                                });
+
+                                print("Response from server: $response");
+                                final data = response["data"] as Map<String, dynamic>?;
+                                final path = data?["path"] as String?;
+                                if (path != null) {
+                                  final addProfileResponse = await socketService.sendAndReceive({
+                                    "type": "addProfileImage",
+                                    "payload": {"path": path}
+                                  });
+                                  if (addProfileResponse["status"] == "success") {
+                                    final set = await socketService.sendAndReceive({
+                                      "type": "setCurrentProfileImage",
+                                      "payload": {
+                                        "currentProfileIndex": images.length - 1,
+                                      }
+                                    });
+
+                                    if(set["status"] == "success"){
+                                      if (!mounted) return;
+                                      setState(() {
+                                        _image = addProfileResponse["data"]["profileImages"][addProfileResponse["data"]["currentProfileIndex"]];
+                                        images = List<String>.from(addProfileResponse["data"]["profileImages"]);
+                                      });
+                                      print("load successful");
+                                    } else {
+                                      print("error in load");
+                                    }
+                                  } else {
+                                    print("Failed to add profile path: ${addProfileResponse["message"]}");
+                                  }
+                                } else {
+                                  print("Upload failed: ${response["message"]}");
+                                }
                               } else {
                                 print("هیچ عکسی انتخاب نشد.");
                               }
                             },
-                          ),
+                          )
                         ],
                       ),
+
                     ],
                   ),
                 ),
@@ -681,25 +617,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             "حذف حساب کاربری",
                             style: TextStyle(color: Colors.red),
                           ),
-                          onTap: () async {
-                            await deleteaccount();
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (context) => const Signup()),
-                            );
-                          },
+                          onTap: deleteaccount,
                         ),
-
                         ListTile(
                           leading: const Icon(Icons.logout, color: Colors.red),
                           title: const Text("خروج از حساب", style: TextStyle(color: Colors.red)),
-                          onTap: () {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const Signup()), //go to welcome page
-                            );
-                          },
+                          onTap: logoutUser,
                         ),
                       ],
                     ),
@@ -707,6 +630,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
+          ),
           ),
         );
       },
@@ -719,26 +643,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFEDEDED),
-      /*appBar: AppBar(
-        title: const Text("MC20 🎵"),
-        centerTitle: true,
-        backgroundColor: Color(0xFFFFA6A6),
-        foregroundColor: Colors.black,
-      ),*/
       body: SafeArea(
-        //padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            //const SizedBox(height: 16),
             Row(
               spacing: 10,
               children: [
-                //const SizedBox(height: 10),
                 Expanded(
                   child: TextField(
                     onChanged: updateSearch,
@@ -809,9 +723,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(
                   width: 90,
                   child: ElevatedButton(
-                    onPressed: showCreatePlaylistDialog,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PlaylistsHome(allplaylists: playlists),
+                        ),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
-                      //width: 20,
                       backgroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 40),
                       shape: RoundedRectangleBorder(
@@ -823,9 +743,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontSize: 16,
                         color:Colors.black,
                       ),
-                      //لازمه کل این کادر به صورت دکمه بشه
-                      // onPressed: showCreatePlaylistDialog,
-                      // و این کارو بکنه
                     ),
                   ),
                 ),
@@ -923,8 +840,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           if (song.isDownloaded)
                             const Icon(Icons.download_done,
                                 color: Colors.green),
-                          if (song.source != SongSource.local)
-                            IconButton(
+                          //if (song.source != SongSource.local)
+                          IconButton(
                               icon: Icon(
                                 song.isLiked
                                     ? Icons.favorite
@@ -933,7 +850,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ? Colors.red
                                     : null,
                               ),
-                              onPressed: () => toggleLike(song),
+                              onPressed: () => _toggleLike(song.id),
                             ),
                           PopupMenuButton<String>(
                             icon: const Icon(Icons.more_vert),

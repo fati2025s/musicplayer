@@ -14,6 +14,7 @@ public class Contoroller {
         //User user = json.fromJson(userJson, User.class);
         if(databass.exitingUser(json.fromJson(userJson, User.class)))
             return false;
+        System.out.println("yooohooo");
         databass.addUser(json.fromJson(userJson, User.class));
         return true;
     }
@@ -37,21 +38,11 @@ public class Contoroller {
         return true;
     }
 
-    public synchronized boolean addlikesong(User user,JsonObject likes) {
-        if(databass.vojodmusic(json.fromJson(likes, Song.class),user)) {
-            databass.addlikesong(json.fromJson(likes, Song.class),user);
-            return true;
-        }
-        return false;
+    public synchronized boolean toggleLikeMusic(User user, JsonObject payload) {
+        int musicId = payload.get("musicId").getAsInt();
+        return databass.toggleLike(user, musicId);
     }
 
-    public synchronized boolean deletlikesong(User user,JsonObject likes) {
-        if(databass.vojodmusic(json.fromJson(likes, Song.class),user)) {
-            databass.deletlikesong(json.fromJson(likes, Song.class),user);
-            return true;
-        }
-        return false;
-    }
 
     public synchronized boolean deleteSong(User user,JsonObject song) {
 
@@ -77,9 +68,17 @@ public class Contoroller {
         return true;
     }
 
-    public synchronized boolean deletePlaylist(User user,JsonObject playlist) {
-        if(databass.vojodplay(json.fromJson(playlist, PlayList.class),user)) {
-            databass.removplaylist(json.fromJson(playlist, PlayList.class),user);
+    public synchronized boolean deletePlaylist(User user, JsonObject payload) {
+        int playlistId = payload.get("playlistId").getAsInt();
+        PlayList toRemove = null;
+        for (PlayList p : user.getPlaylists()) {
+            if (p.getId() == playlistId) {
+                toRemove = p;
+                break;
+            }
+        }
+        if (toRemove != null) {
+            databass.removplaylist(toRemove, user);
             return true;
         }
         return false;
@@ -107,14 +106,28 @@ public class Contoroller {
         return true;
     }
 
-    /*public synchronized PlayList getPlaylist(JsonObject playlist) {
-        return json.fromJson(playlist, PlayList.class);
+    public synchronized boolean addProfile(User user, JsonObject payload) {
+        String path = payload.get("path").getAsString();
+        return databass.addProfilePath(path, user);
     }
 
-    public synchronized List<PlayList> getPlaylists(JsonObject playlists) {
-        List<PlayList> playlistList = new ArrayList<>();
-        /*for (JsonObject playlist : playlists) {
-            playlistList.add(json.fromJson(playlist, PlayList.class));
+    public synchronized boolean removeProfile(User user, JsonObject payload) {
+        String path = payload.get("path").getAsString();
+        return databass.removeProfilePath(path, user);
+    }
+
+    public synchronized boolean setCurrentProfile(User user, JsonObject payload) {
+        if (payload == null || !payload.has("currentProfileIndex") || payload.get("currentProfileIndex").isJsonNull()) {
+            System.out.println("payload null یا currentProfileIndex موجود نیست!");
+            return false;
         }
-        return playlistList*/
+
+        try {
+            int index = payload.get("currentProfileIndex").getAsInt();
+            return databass.setCurrentProfileIndex(user, index);
+        } catch (NumberFormatException e) {
+            System.out.println("currentProfileIndex عدد صحیح نیست!");
+            return false;
+        }
+    }
 }

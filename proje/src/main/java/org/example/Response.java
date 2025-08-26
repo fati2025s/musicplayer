@@ -6,7 +6,7 @@ import com.google.gson.JsonObject;
 public class Response {
     private String status;       // success | error
     private String message;
-    private JsonObject data;
+    private Object data;
     private String requestId;
 
     public Response(String status, String message) {
@@ -15,13 +15,13 @@ public class Response {
         this.data = new JsonObject();
     }
 
-    public Response(String status, String message, JsonObject data) {
+    public Response(String status, String message, Object data) {
         this.status = status;
         this.message = message;
         this.data = data != null ? data : new JsonObject();
     }
 
-    public Response(String status, String message, JsonObject data, String requestId) {
+    public Response(String status, String message, Object data, String requestId) {
         this.status = status;
         this.message = message;
         this.data = data != null ? data : new JsonObject();
@@ -36,7 +36,7 @@ public class Response {
         return message;
     }
 
-    public JsonObject getData() {
+    public Object getData() {
         return data;
     }
 

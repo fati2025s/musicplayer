@@ -25,7 +25,7 @@ class _PlaylistDetailsScreenState extends State<BlackPlaylistDetailsScreen> {
   void initState() {
     super.initState();
     if (!socketService.isConnected) {
-      socketService.connect("172.20.98.97", 8080);
+      socketService.connect("10.208.175.99", 8080);
     }
     playlistService = PlaylistService(socketService);
   }
@@ -40,7 +40,7 @@ class _PlaylistDetailsScreenState extends State<BlackPlaylistDetailsScreen> {
     });
 
     setState(() {
-      widget.playlist.songs.remove(song);
+      widget.playlist.music.remove(song);
     });
   }
 
@@ -54,7 +54,7 @@ class _PlaylistDetailsScreenState extends State<BlackPlaylistDetailsScreen> {
     });
 
     setState(() {
-      widget.playlist.songs.add(song);
+      widget.playlist.music.add(song);
     });
   }
 
@@ -157,12 +157,12 @@ class _PlaylistDetailsScreenState extends State<BlackPlaylistDetailsScreen> {
           ),
         ],
       ),
-      body: playlist.songs.isEmpty
+      body: playlist.music.isEmpty
           ? const Center(child: Text("هیچ آهنگی در این پلی‌لیست نیست"))
           : ListView.builder(
-        itemCount: playlist.songs.length,
+        itemCount: playlist.music.length,
         itemBuilder: (context, index) {
-          final song = playlist.songs[index];
+          final song = playlist.music[index];
           return ListTile(
             leading: const Icon(Icons.music_note),
             title: Text(song.name),
@@ -172,7 +172,7 @@ class _PlaylistDetailsScreenState extends State<BlackPlaylistDetailsScreen> {
               onPressed: () => removeSong(song),
             ),
             onTap: () {
-              audioService.setPlaylist(playlist.songs, startIndex: index);
+              audioService.setPlaylist(playlist.music, startIndex: index);
               audioService.play();
               Navigator.push(
                 context,

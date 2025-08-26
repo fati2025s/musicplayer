@@ -2,21 +2,24 @@ import '../models/song.dart';
 
 class Playlist {
   final int id;
-  String name;
-  List<Song> songs;
+  final String name;
+  final bool likeplaylist;
+  List<Song> music;
 
   Playlist({
     required this.id,
     required this.name,
-    required this.songs,
+    required this.likeplaylist,
+    required this.music,
   });
 
   factory Playlist.fromJson(Map<String, dynamic> json) {
     return Playlist(
-      id: json['id'],
-      name: json['name'],
-      songs: (json['songs'] as List<dynamic>)
-          .map((e) => Song.fromJson(e))
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      likeplaylist: json['likeplaylist'] ?? false,
+      music: (json['music'] as List<dynamic>? ?? [])
+          .map((s) => Song.fromJson(s))
           .toList(),
     );
   }
@@ -25,7 +28,7 @@ class Playlist {
     return {
       'id': id,
       'name': name,
-      'songs': songs.map((s) => s.toJson()).toList(),
+      'music': music.map((s) => s.toJson()).toList(),
     };
   }
 }

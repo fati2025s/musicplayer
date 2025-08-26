@@ -57,7 +57,6 @@ class singelton {
     _controller.stream.listen(onData);
   }
 
-  // ارسال درخواست و دریافت پاسخ به صورت Future
   Future<Map<String, dynamic>> sendAndReceive(Map<String, dynamic> data, {Duration timeout = const Duration(seconds: 10)}) async {
     final completer = Completer<Map<String, dynamic>>();
     late StreamSubscription sub;

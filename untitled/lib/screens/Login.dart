@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:untitled/screens/singelton.dart';
+import '../models/user.dart';
 import 'Signup.dart';
 import 'dart:convert';
 import 'HomeScreen.dart';
@@ -69,30 +70,36 @@ class _LoginState extends State<Login> {
         "songs": [],
         "playlists": [],
         "likedSongs": [],
-        "likedArtists": [],
       }
     };
+
     try {
       final socketService = singelton();
-      await socketService.connect("172.20.98.97", 8080);
+      await socketService.connect("10.208.175.99", 8080);
+
       socketService.listen((responseJson) {
         setState(() {
           message = responseJson["message"] ?? "Unknown response";
         });
-
         if (responseJson["status"] == "success") {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => HomeScreen()),
-          );
+          final user = User.fromJson(responseJson["data"]["user"]);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => HomeScreen(currentu: user)),
+            );
+          });
         }
       });
 
       socketService.send(requestBody);
     } catch (e) {
+
       setState(() => message = "Connection failed: $e");
     }
   }
+
 
   /*Future<void> _authenticate() async {
     try {

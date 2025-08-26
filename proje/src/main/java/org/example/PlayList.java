@@ -139,9 +139,7 @@ public class PlayList {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         PlayList playList = (PlayList) o;
-        return id == playList.id && likeplaylist == playList.likeplaylist && Objects.equals(name, playList.name) &&
-                Objects.equals(user, playList.user) && Objects.equals(creationTime, playList.creationTime) &&
-                Objects.equals(music, playList.music) && Objects.equals(artists, playList.artists);
+        return id == playList.id && likeplaylist == playList.likeplaylist && Objects.equals(name, playList.name) && Objects.equals(user, playList.user) && Objects.equals(creationTime, playList.creationTime) && Objects.equals(music, playList.music) && Objects.equals(artists, playList.artists);
     }
 
     @Override

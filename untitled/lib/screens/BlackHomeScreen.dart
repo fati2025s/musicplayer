@@ -9,6 +9,7 @@ import '../models/playlist.dart';
 import '../models/song.dart';
 import '../models/song_sort.dart';
 import 'package:path_provider/path_provider.dart';
+import '../models/user.dart';
 import '../service/AudioService.dart';
 import '../service/SocketService.dart';
 import '../service/localmusic.dart';
@@ -25,7 +26,8 @@ import 'HomeScreen.dart';
 import 'Signup.dart';
 import 'blackuserprofile.dart';
 class BlackHomeScreen extends StatefulWidget {
-  BlackHomeScreen({Key? key}) : super(key: key);
+  final User currentuser;
+  BlackHomeScreen({Key? key,required this.currentuser}) : super(key: key);
 
   @override
   State<BlackHomeScreen> createState() => _HomeScreenState();
@@ -51,6 +53,23 @@ class _HomeScreenState extends State<BlackHomeScreen> {
   File? _image;
 
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData(widget.currentuser);
+  }
+
+  void _loadUserData(User user) {
+    setState(() {
+      playlists = user.playlists;
+      allSongs = [
+        ...user.likedSongs,
+        ...user.downloadedSongs,
+      ];
+      applyFilters();
+    });
+  }
 
   void toggleLike(Song song) {
     if (song.source == SongSource.local) return;
@@ -177,7 +196,7 @@ class _HomeScreenState extends State<BlackHomeScreen> {
     final jsonString = json.encode(requestBody) + '\n';
 
     try {
-      var socket = await Socket.connect("172.20.98.97", 8080);
+      var socket = await Socket.connect("10.208.175.99", 8080);
       StringBuffer responseText = StringBuffer();
       final completer = Completer<String>();
 
@@ -242,7 +261,7 @@ class _HomeScreenState extends State<BlackHomeScreen> {
     final jsonString = json.encode(requestBody) + '\n';
 
     try {
-      var socket = await Socket.connect("172.20.98.97", 8080); // IP و پورت بک
+      var socket = await Socket.connect("10.208.175.99", 8080); // IP و پورت بک
       StringBuffer responseText = StringBuffer();
       final completer = Completer<String>();
 
@@ -308,7 +327,7 @@ class _HomeScreenState extends State<BlackHomeScreen> {
     final jsonString = json.encode(requestBody) + '\n';
 
     try {
-      var socket = await Socket.connect("172.20.98.97", 8080);
+      var socket = await Socket.connect("10.208.175.99", 8080);
       StringBuffer responseText = StringBuffer();
       final completer = Completer<String>();
 
@@ -387,7 +406,7 @@ class _HomeScreenState extends State<BlackHomeScreen> {
     final jsonString = json.encode(requestBody) + '\n';
 
     try {
-      var socket = await Socket.connect("172.20.98.97", 8080);
+      var socket = await Socket.connect("10.208.175.99", 8080);
       StringBuffer responseText = StringBuffer();
       final completer = Completer<String>();
 
@@ -526,7 +545,8 @@ class _HomeScreenState extends State<BlackHomeScreen> {
                     Playlist(
                       id: DateTime.now().millisecondsSinceEpoch,
                       name: name,
-                      songs: [],
+                      likeplaylist: false,
+                      music: [],
                     ),
                   );
                 });
@@ -561,7 +581,6 @@ class _HomeScreenState extends State<BlackHomeScreen> {
         return Align(
           alignment: Alignment.centerRight,
           child: Container(
-            height: height,
             width: width * 0.75,
             decoration: const BoxDecoration(
               borderRadius: BorderRadius.only(
@@ -577,6 +596,7 @@ class _HomeScreenState extends State<BlackHomeScreen> {
               ],
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.max,
               children: [
                 Container(
                   height: height * 0.2,
@@ -590,7 +610,7 @@ class _HomeScreenState extends State<BlackHomeScreen> {
                   ),
                   child: Column(
                     children: [
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 5),
                       Row(
                           textDirection: TextDirection.rtl,
                           children: [
@@ -619,27 +639,27 @@ class _HomeScreenState extends State<BlackHomeScreen> {
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              "نام",
+                                widget.currentuser.username,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(width: 100),
+                            const SizedBox(width: 60),
                             IconButton(
                               icon: const Icon(Icons.nightlight, color: Colors.white),
                               onPressed: () {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) => HomeScreen()),
+                                      builder: (context) => HomeScreen(currentu: widget.currentuser)),
                                 );
                               },
                             ),
                           ]
                       ),
-                      const SizedBox(height: 15),
+                      //const SizedBox(height: 5),
                       Row(
                         children: [
                           IconButton(
@@ -810,7 +830,14 @@ class _HomeScreenState extends State<BlackHomeScreen> {
                 SizedBox(
                   width: 90,
                   child: ElevatedButton(
-                    onPressed: showCreatePlaylistDialog,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BlackPlaylistsHome(allplaylists: playlists),
+                        ),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 40),
