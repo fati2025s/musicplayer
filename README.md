@@ -14,31 +14,31 @@ The main focus of Mc20 is to deliver a **modern, responsive mobile UI** built wi
 
 ![Welcome Page](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/WelcomePage.jpg)
 
-![Login Page](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/Login.jpg)  ![Login Page](untitled/assets/screenshots/Login1.jpg)
+![Login Page](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/Login.jpg)  ![Login Page](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/Login1.jpg)
 
-![Signup Page](untitled/assets/screenshots/Signup.jpg)  ![Signup Page](untitled/assets/screenshots/Signup1.jpg)
+![Signup Page](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/Signup.jpg)  ![Signup Page](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/Signup1.jpg)
 
 ### Home Page
 
-![Home Page](untitled/assets/screenshots/HomePage.jpg)
+![Home Page](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/HomePage.jpg)
 
 ### 📚 Music Library & Sorting
 
 In this section, all available or user-added tracks are displayed. Using the **Sort by** option, tracks can be sorted by most popular, newest, or different categories (local / server). Additionally, a desired track can be found using the **Search** feature.
 
-![Sort Options](untitled/assets/screenshots/Sort.jpg)  ![Add Music Options](untitled/assets/screenshots/AploadAptions.jpg)
+![Sort Options](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/Sort.jpg)  ![Add Music Options](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/AploadAptions.jpg)
 
 Users can download songs from the server or from local files and add them to the app.
 
 ### Menu & Account Pages
 
-![Menu Page](untitled/assets/screenshots/Menu.jpg)  ![Account Page](untitled/assets/screenshots/UserAccount.jpg)
+![Menu Page](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/Menu.jpg)  ![Account Page](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/UserAccount.jpg)
 
 Users can view and edit account information. Songs can also be shared or liked with friends.
 
 ### Playlist Page
 
-![Playlist Page](untitled/assets/screenshots/Playlists.jpg)
+![Playlist Page](https://github.com/fati2025s/musicplayer/raw/fzarin1/untitled/assets/screenshots/Playlists.jpg)
 
 Users can create playlists, add songs, share them with friends, and delete them if desired.
 
