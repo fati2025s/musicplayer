@@ -123,5 +123,3 @@ flutter run
 
 ---
 
-This README is now ready to be placed in your GitHub repository.
-
