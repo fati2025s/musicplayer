@@ -25,7 +25,7 @@ class _PlaylistDetailsScreenState extends State<BlackPlaylistDetailsScreen> {
   void initState() {
     super.initState();
     if (!socketService.isConnected) {
-      socketService.connect("10.208.175.99", 8080);
+      socketService.connect("172.20.195.170", 8080);
     }
     playlistService = PlaylistService(socketService);
   }

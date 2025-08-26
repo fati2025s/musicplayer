@@ -196,7 +196,7 @@ class _HomeScreenState extends State<BlackHomeScreen> {
     final jsonString = json.encode(requestBody) + '\n';
 
     try {
-      var socket = await Socket.connect("10.208.175.99", 8080);
+      var socket = await Socket.connect("172.20.195.170", 8080);
       StringBuffer responseText = StringBuffer();
       final completer = Completer<String>();
 
@@ -261,7 +261,7 @@ class _HomeScreenState extends State<BlackHomeScreen> {
     final jsonString = json.encode(requestBody) + '\n';
 
     try {
-      var socket = await Socket.connect("10.208.175.99", 8080); // IP و پورت بک
+      var socket = await Socket.connect("172.20.195.170", 8080); // IP و پورت بک
       StringBuffer responseText = StringBuffer();
       final completer = Completer<String>();
 
@@ -327,7 +327,7 @@ class _HomeScreenState extends State<BlackHomeScreen> {
     final jsonString = json.encode(requestBody) + '\n';
 
     try {
-      var socket = await Socket.connect("10.208.175.99", 8080);
+      var socket = await Socket.connect("172.20.195.170", 8080);
       StringBuffer responseText = StringBuffer();
       final completer = Completer<String>();
 
@@ -406,7 +406,7 @@ class _HomeScreenState extends State<BlackHomeScreen> {
     final jsonString = json.encode(requestBody) + '\n';
 
     try {
-      var socket = await Socket.connect("10.208.175.99", 8080);
+      var socket = await Socket.connect("172.20.195.170", 8080);
       StringBuffer responseText = StringBuffer();
       final completer = Completer<String>();
 

@@ -101,7 +101,7 @@ class _PlaylistsHomeState extends State<PlaylistsHome> {
       final socketService = singelton();
 
       if (!socketService.isConnected) {
-        await socketService.connect("10.208.175.99", 8080);
+        await socketService.connect("172.20.195.170", 8080);
       }
 
       final responseJson = await socketService.sendAndReceive(requestBody);
@@ -130,7 +130,7 @@ class _PlaylistsHomeState extends State<PlaylistsHome> {
 
     try {
       final socketService = singelton();
-      await socketService.connect("10.208.175.99", 8080);
+      await socketService.connect("172.20.195.170", 8080);
 
       socketService.listen((responseJson) {
         setState(() {

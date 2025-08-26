@@ -80,7 +80,7 @@ class _SignupState extends State<Signup> {
 
     try {
       final socketService = singelton();
-      await socketService.connect("10.208.175.99", 8080);
+      await socketService.connect("172.20.195.170", 8080);
 
       socketService.listen((responseJson) {
         setState(() {

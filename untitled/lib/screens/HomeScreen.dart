@@ -223,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final socketService = singelton();
     if (!socketService.isConnected) {
-      await socketService.connect("10.208.175.99", 8080);
+      await socketService.connect("172.20.195.170", 8080);
     }
 
     final requestBody = {
@@ -258,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final socketService = singelton();
 
       if (!socketService.isConnected) {
-        await socketService.connect("10.208.175.99", 8080);
+        await socketService.connect("172.20.195.170", 8080);
       }
 
       final requestBody = {
@@ -326,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final socketService = singelton();
       if (!socketService.isConnected) {
-        await socketService.connect("10.208.175.99", 8080);
+        await socketService.connect("172.20.195.170", 8080);
       }
 
       socketService.listen((responseJson) {
