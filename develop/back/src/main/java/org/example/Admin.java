@@ -26,6 +26,7 @@ public class Admin {
         List<Song> likedSongs = db.getLikedSongs(user);
 
         return String.format(
+                "ID: %s | Username: %s | Email: %s | Songs: %d | Playlists: %d | Liked Songs: %d",
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
@@ -44,7 +45,7 @@ public class Admin {
         return db.getAllSongs();
     }
 
-        public boolean deleteSong(int songId) {
+    public boolean deleteSong(int songId) {
         boolean removed = false;
 
         for (User u : db.getAllUsers()) {
@@ -55,7 +56,6 @@ public class Admin {
             liked.remove(songId);
         }
 
-        
         for (User u : db.getAllUsers()) {
             for (Playlist p : u.getPlaylists()) {
                 p.getSongs().removeIf(s -> s.getId() == songId);
@@ -68,7 +68,6 @@ public class Admin {
 
         return removed;
     }
-
 
     public List<Song> getTop20MostLikedSongs() {
         return db.getAllSongsSortedByLikes()

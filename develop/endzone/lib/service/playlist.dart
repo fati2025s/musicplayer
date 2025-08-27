@@ -1,4 +1,3 @@
-// ===================== lib/service/PlaylistService.dart =====================
 import 'dart:convert';
 import '../models/playlist.dart';
 import 'SocketService.dart';
@@ -8,7 +7,6 @@ class PlaylistService {
 
   PlaylistService(this.socketService);
 
-  // --- Helper برای نرمال‌سازی داده ---
   List<dynamic> _normalizeData(dynamic rawData) {
     if (rawData == null) return [];
     if (rawData is List) return rawData;
@@ -23,25 +21,28 @@ class PlaylistService {
     return [];
   }
 
-  // --- ایجاد پلی‌لیست ---
   Future<Playlist?> addPlaylist(String name) async {
     try {
       final response = await socketService.addPlaylist(name);
 
       if (response["status"] == "success" && response["data"] != null) {
-        print("✅ Playlist created: $name");
-        return Playlist.fromJson(response["data"]);
+        final data = response["data"];
+        return Playlist.fromJson({
+          "id": data["id"],
+          "name": data["name"] ?? name,
+          "songs": data["songs"] ?? [],
+        });
       } else {
         print("⚠ Failed to create playlist: ${response["message"]}");
         return null;
       }
     } catch (e) {
-      print("❌ Error in addPlaylist: $e");
+      print(" Error in addPlaylist: $e");
       return null;
     }
   }
 
-  // --- اشتراک‌گذاری پلی‌لیست ---
+
   Future<bool> sharePlaylist(int playlistId, String targetUsername) async {
     try {
       final response =
@@ -49,32 +50,66 @@ class PlaylistService {
       if (response["status"] == "success") {
         return true;
       } else {
-        print("⚠ Failed to share playlist: ${response["message"]}");
+        print(" Failed to share playlist: ${response["message"]}");
         return false;
       }
     } catch (e) {
-      print("❌ Error in sharePlaylist: $e");
+      print(" Error in sharePlaylist: $e");
       return false;
     }
   }
 
-  // --- حذف پلی‌لیست ---
+  Future<bool> addSongToPlaylist(int playlistId, int songId) async {
+    try {
+      final response = await socketService.addSongToPlaylist(playlistId, songId);
+
+      if (response["status"] == "success") {
+        print("Song $songId added to playlist $playlistId");
+        return true;
+      } else {
+        print("⚠ Failed to add song: ${response["message"]}");
+        return false;
+      }
+    } catch (e) {
+      print("Error in addSongToPlaylist: $e");
+      return false;
+    }
+  }
+
+
   Future<bool> deletePlaylist(int playlistId) async {
     try {
       final response = await socketService.deletePlaylist(playlistId);
       if (response["status"] == "success") {
         return true;
       } else {
-        print("⚠ Failed to delete playlist: ${response["message"]}");
+        print("Failed to delete playlist: ${response["message"]}");
         return false;
       }
     } catch (e) {
-      print("❌ Error in deletePlaylist: $e");
+      print("Error in deletePlaylist: $e");
       return false;
     }
   }
 
-  // --- گرفتن لیست پلی‌لیست‌ها ---
+  Future<bool> renamePlaylist(int playlistId, String newName) async {
+    try {
+      final response = await socketService.renamePlaylist(playlistId, newName);
+
+      if (response["status"] == "success") {
+        print("Playlist $playlistId renamed to $newName");
+        return true;
+      } else {
+        print("Failed to rename playlist: ${response["message"]}");
+        return false;
+      }
+    } catch (e) {
+      print("Error in renamePlaylist: $e");
+      return false;
+    }
+  }
+
+
   Future<List<Playlist>> listPlaylists() async {
     try {
       final response = await socketService.listPlaylists();
@@ -85,7 +120,7 @@ class PlaylistService {
       }
       return [];
     } catch (e) {
-      print("❌ Error in listPlaylists: $e");
+      print("Error in listPlaylists: $e");
       return [];
     }
   }

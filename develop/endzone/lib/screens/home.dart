@@ -24,17 +24,8 @@ import '../service/Playlist.dart';
 import '../service/Upload.dart';
 import '../widget/profileimageslider.dart';
 
-// ------------------------------------------------------------
-// Merged HomeScreen
-// - UI/layout preserved from the second file (clean UI, side panel, profile interactions)
-// - Business logic / networking / audio behavior preserved from the first file
-// Important: logic functions (loadData, toggleLike, downloadSongToLocal, pick/upload songs)
-// remain the source of truth and should not be altered accidentally.
-// ------------------------------------------------------------
 
 class HomeScreen extends StatefulWidget {
-  /// Optional: if you want to show current user's username in the UI,
-  /// pass it here. If null, UI will hide username-related parts gracefully.
   final String? username;
 
   const HomeScreen({Key? key, this.username}) : super(key: key);
@@ -44,7 +35,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // --- core services & logic (from code #1) ---
   final SocketService socketService = SocketService();
 
   late final AudioService audioService;
@@ -61,7 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final Set<int> _downloadingSongIds = {};
   final Set<int> _likingSongIds = {};
 
-  // --- UI/profile-related (from code #2) ---
   final ImagePicker _picker = ImagePicker();
   List<String> profileImages = [];
   int currentProfileIndex = 0;
@@ -71,7 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
-    // initialize services using the socketService so they're aligned
     audioService = AudioService(socket: socketService);
     playlistService = PlaylistService(socketService);
     musicService = MusicService(socketService);
@@ -80,7 +68,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadProfileImages();
   }
 
-  // -------------------- logic (from code 1) --------------------
   Future<void> loadData() async {
     if (!mounted) return;
     setState(() => isLoading = true);
@@ -332,9 +319,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // -------------------- profile utilities (UI from code #2, gentle calls using socketService) --------------------
-
-  /// بارگذاری تصاویر پروفایل از حافظه‌ی محلی
   Future<void> _loadProfileImages() async {
     final prefs = await SharedPreferences.getInstance();
     profileImages = prefs.getStringList("profileImages") ?? [];
@@ -351,7 +335,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() {});
   }
 
-  /// باز کردن اسلایدر نمایش تصاویر
   void openProfileSlider() {
     Navigator.push(
       context,
@@ -364,7 +347,6 @@ class _HomeScreenState extends State<HomeScreen> {
     ).then((_) => _loadProfileImages());
   }
 
-  /// انتخاب تصویر جدید و ذخیره‌سازی لوکال
   Future<void> pickProfileImage() async {
     final XFile? pickedFile =
     await _picker.pickImage(source: ImageSource.gallery);
@@ -373,7 +355,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final file = File(pickedFile.path);
     final base64Image = base64Encode(await file.readAsBytes());
 
-    // اضافه به لیست لوکال
     profileImages.add(base64Image);
     currentProfileIndex = profileImages.length - 1;
     currentProfilePath = base64Image;
@@ -385,7 +366,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() {});
   }
 
-  // -------------------- UI building (mostly from code #2) --------------------
   void showAddOptions() {
     showModalBottomSheet(
       context: context,
@@ -517,8 +497,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             IconButton(
                               icon: const Icon(Icons.sunny, color: Colors.white),
                               onPressed: () {
-                                // If you have a dark/black home screen, navigate to it.
-                                // Navigator.pushReplacement(...)
                               },
                             ),
                           ],
@@ -561,7 +539,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               style: TextStyle(color: Colors.red),
                             ),
                             onTap: () async {
-                              // Use same delete flow as original app if implemented elsewhere
                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('درخواست حذف حساب ارسال شد')));
                             },
                           ),
@@ -584,7 +561,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // -------------------- main build --------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -592,7 +568,6 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // top search & menu row (from code #2 UI)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Row(
@@ -636,7 +611,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 15),
 
-            // quick action buttons (from code #2 UI)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Wrap(
@@ -693,7 +667,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 10),
 
-            // sort menu (from code #2)
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
@@ -711,7 +684,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 10),
 
-            // songs list (keeps logic from code #1)
             Expanded(
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -804,7 +776,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // -------------------- small helpers (delete) --------------------
   void _delete(Song song) async {
     final requestBody = {
       "type": "deletesong",

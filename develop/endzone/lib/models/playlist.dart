@@ -1,7 +1,7 @@
 import '../models/song.dart';
 
 class Playlist {
-  final int id; // 👈 تغییر به int
+  final int id;
   String name;
   List<Song> songs;
 
@@ -15,7 +15,7 @@ class Playlist {
     return Playlist(
       id: json['id'] is int
           ? json['id']
-          : int.tryParse(json['id'].toString()) ?? 0, // safe برای String/int
+          : int.tryParse(json['id'].toString()) ?? 0,
       name: json['name'] ?? "",
       songs: (json['songs'] as List<dynamic>? ?? [])
           .map((e) => Song.fromJson(e))

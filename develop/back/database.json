@@ -1,71 +1,101 @@
 {
-  "guest": {
-    "id": "guest-id",
-    "username": "guest",
-    "password": "nopass",
-    "email": "guest@example.com",
-    "profilePicturePaths": [],
-    "songs": [
-      {
-        "id": 2,
-        "name": "9357.mp3",
-        "artist": {
-          "name": "Unknown",
-          "numOfSongs": 0
+  "users": {
+    "amirali": {
+      "id": "6d00ef99-b88f-4f14-9aee-7497704bde1b",
+      "username": "amirali",
+      "password": "1234567A",
+      "email": "Amirabbasamadeh@gmail.comm",
+      "profilePicturePaths": [],
+      "songs": [],
+      "playlists": [],
+      "canReceiveShares": true
+    },
+    "karim": {
+      "id": "ddb5ea8b-5456-484e-9ca8-08d22f8e353b",
+      "username": "karim",
+      "password": "1234567A",
+      "email": "karimbenzema@gmail.com",
+      "profilePicturePaths": [],
+      "songs": [
+        {
+          "id": 4,
+          "name": "9357.mp3",
+          "artist": {
+            "name": "Unknown",
+            "numOfSongs": 0
+          },
+          "liked": false,
+          "pakhsh": 0,
+          "filePath": "C:\\Users\\Amirabbas\\Desktop\\musicplayer\\develop\\back\\uploads\\karim\\1756316508209_9357.mp3",
+          "source": "uploaded",
+          "likeCount": 0
+        }
+      ],
+      "playlists": [],
+      "canReceiveShares": true
+    },
+    "guest": {
+      "id": "guest-id",
+      "username": "guest",
+      "password": "nopass",
+      "email": "guest@example.com",
+      "profilePicturePaths": [],
+      "songs": [
+        {
+          "id": 6,
+          "name": "9357.mp3",
+          "artist": {
+            "name": "Unknown",
+            "numOfSongs": 0
+          },
+          "liked": false,
+          "pakhsh": 0,
+          "filePath": "C:\\Users\\Amirabbas\\Desktop\\musicplayer\\develop\\back\\uploads\\karim\\1756322887730_9357.mp3",
+          "source": "uploaded",
+          "likeCount": 0
+        }
+      ],
+      "playlists": [],
+      "canReceiveShares": true
+    },
+    "amirabbas": {
+      "id": "00abf7b8-cad6-487e-ad90-b666e6b46547",
+      "username": "amirabbas",
+      "password": "1234567A",
+      "email": "amirabbasamade@gmail.com",
+      "profilePicturePaths": [],
+      "songs": [],
+      "playlists": [
+        {
+          "id": 1,
+          "name": "karim",
+          "ownerUsername": "amirabbas",
+          "songs": [],
+          "artists": [],
+          "liked": false,
+          "readOnly": false,
+          "shared": false
         },
-        "liked": false,
-        "pakhsh": 0,
-        "filePath": "C:\\Users\\Amirabbas\\Desktop\\musicplayer\\develop\\back\\uploads\\guest\\1756152534593_9357.mp3",
-        "source": "uploaded",
-        "likeCount": 4
-      }
-    ],
-    "playlists": [],
-    "canReceiveShares": true
+        {
+          "id": 3,
+          "name": "test2",
+          "ownerUsername": "karim",
+          "songs": [],
+          "artists": [],
+          "liked": false,
+          "readOnly": true,
+          "shared": true
+        }
+      ],
+      "canReceiveShares": true
+    }
   },
-  "amirabbas": {
-    "id": "95229b35-1f83-4fc7-936a-edd42b964998",
-    "username": "amirabbas",
-    "password": "1234567A",
-    "email": "amirabbasamadeh@gmail.com",
-    "profilePicturePaths": [],
-    "songs": [
-      {
-        "id": 2,
-        "name": "persian-fantasy-157742.mp3",
-        "artist": {
-          "name": "Unknown",
-          "numOfSongs": 0
-        },
-        "liked": false,
-        "pakhsh": 0,
-        "filePath": "C:\\Users\\Amirabbas\\Desktop\\musicplayer\\develop\\back\\uploads\\amirabbas\\1756268765488_persian-fantasy-157742.mp3",
-        "source": "uploaded",
-        "likeCount": 0
-      }
-    ],
-    "playlists": [
-      {
-        "id": 1,
-        "name": "hend",
-        "ownerUsername": "amirabbas",
-        "songs": [],
-        "artists": [],
-        "liked": false,
-        "readOnly": false,
-        "shared": false
-      },
-      {
-        "id": 1,
-        "name": "habbit",
-        "ownerUsername": "amirabbas",
-        "songs": [],
-        "artists": [],
-        "liked": false,
-        "readOnly": false,
-        "shared": false
-      }
-    ],
-    "canReceiveShares": true
-  }
+  "userLikedSongs": {
+    "karim": [],
+    "amirabbas": [
+      247875356
+    ]
+  },
+  "playlistId": 4,
+  "songId": 8
 }

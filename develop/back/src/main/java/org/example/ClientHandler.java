@@ -22,236 +22,194 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try (
-    BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))
-) {
-    String requestLine;
-    while ((requestLine = reader.readLine()) != null) {
-        Request request = gson.fromJson(requestLine, Request.class);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))
+        ) {
+            String requestLine;
+            while ((requestLine = reader.readLine()) != null) {
+                Request request;
+                try {
+                    request = gson.fromJson(requestLine, Request.class);
+                } catch (Exception e) {
+                    System.out.println("Invalid request JSON: " + requestLine);
+                    sendRawError(writer, null, "invalid_json", "Could not parse request");
+                    continue;
+                }
 
-        if ("uploadSongFile".equals(request.getType())) {
-            System.out.println("Received: uploadSongFile (base64 skipped)");
-        } else {
-            System.out.println("Received: " + requestLine);
-        }
+                if ("uploadSongFile".equals(request.getType())) {
+                    System.out.println("Received: uploadSongFile (base64 skipped)");
+                } else {
+                    System.out.println("Received: " + requestLine);
+                }
 
-        Response response = handleRequest(request, writer);
+                JsonObject payload = request.getPayload();
+                User currentUser = null;
 
-        if (request.getRequestId() != null && response != null) {
-            response.setRequestId(request.getRequestId());
-        }
+                if (!"register".equals(request.getType()) && !"login".equals(request.getType())) {
+                    currentUser = authenticate(payload);
+                    if (currentUser == null) {
+                        System.out.println("[AUTH] Authentication failed or not provided — using guest user.");
+                        currentUser = controller.database.findUserByUsername("guest");
+                        if (currentUser == null) {
+                            currentUser = new User("guest-id", "guest", "guest@example.com", "nopass");
+                            controller.database.addUser(currentUser);
+                        }
+                    }
+                }
 
-        if (response != null) {
-            String jsonResponse = gson.toJson(response);
+                Object handlerResult;
+                try {
+                    handlerResult = handleRequestObject(request, currentUser, writer);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    sendRawError(writer, request.getRequestId(), "server_error", "Internal server error");
+                    continue;
+                }
 
-            if ("uploadSongFile".equals(request.getType())) {
-                System.out.println("Response: " + response.getStatus() + " - " + response.getMessage());
-            } else {
-                System.out.println("Sending: " + jsonResponse);
+                if (handlerResult instanceof JsonObject) {
+                    JsonObject respObj = (JsonObject) handlerResult;
+                    if (request.getRequestId() != null) {
+                        respObj.addProperty("requestId", request.getRequestId());
+                    }
+                    String jsonResponse = gson.toJson(respObj);
+                    if ("uploadSongFile".equals(request.getType())) {
+                        System.out.println("Response: " + safeShorten(jsonResponse));
+                    } else {
+                        System.out.println("Sending: " + jsonResponse);
+                    }
+                    writer.write(jsonResponse + "\n");
+                    writer.flush();
+                }
             }
-
-            try {
-                writer.write(jsonResponse + "\n");
-                writer.flush();
-            } catch (IOException e) {
-                System.err.println("Failed to send response: " + e.getMessage());
-                break;
-            }
+        } catch (IOException e) {
+            System.out.println("Client disconnected: " + socket + " (" + e.getMessage() + ")");
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
-} catch (IOException e) {
-    System.out.println("Client disconnected: " + socket);
-    }
-}
-
-
-    private Response handleRequest(Request req, BufferedWriter writer) {
-         String type = req.getType();
-    JsonObject payload = req.getPayload();
-
-   User currentUser = null;
-if (!"register".equals(type) && !"login".equals(type)) {
-    currentUser = authenticate(payload);
-
-    if (currentUser == null) {
-        System.out.println("[AUTH] Authentication failed, falling back to guest user.");
-        currentUser = controller.database.findUserByUsername("guest");
-
-        if (currentUser == null) {
-            System.out.println("Don't worry about Auth.it is doing it's job");
-            currentUser = new User(
-                "guest-id",
-                "guest",
-                "guest@example.com",
-                "nopass"
-            );
-            controller.database.addUser(currentUser);
-        }
-        
-    }
-}
-
+    
+    private Object handleRequestObject(Request req, User currentUser, BufferedWriter writer) throws IOException {
+        String type = req.getType();
+        JsonObject payload = req.getPayload();
 
         switch (type) {
             case "register":
-                return handleRegister(payload);
-            case "login":
-                return handleLogin(payload);
+                return wrapBoolResponse(controller.register(payload), "user registered", "user already exists");
+
+            case "login": {
+                User logged = controller.login(payload);
+                if (logged != null) {
+                    JsonObject data = new JsonObject();
+                    data.addProperty("username", logged.getUsername());
+                    return buildResponse("success", "user authenticated", data);
+                } else {
+                    return buildResponse("error", "invalid login", null);
+                }
+            }
+
             case "logout":
-                return handleLogout(currentUser);
+                return wrapBoolResponse(controller.logout(currentUser), "user logged out", "logout failed");
 
             case "changePassword": {
                 boolean changed = controller.changePassword(currentUser, payload);
-                return new Response(changed ? "success" : "error",
-                        changed ? "password changed" : "password not changed");
+                return wrapSimple(changed, "password changed", "password not changed");
             }
+
             case "changeUserInfo":
-                return handleChangeUserInfo(currentUser, payload);
-                case "listLikedSongs": {
-    JsonArray arr = controller.listLikedSongs(currentUser);
-    JsonObject data = new JsonObject();
-    data.add("songs", arr);
+                return wrapBoolResponse(controller.changeUserInfo(currentUser, payload), "user info updated", "update failed");
 
-    return Response.success("liked songs fetched", data);
-}
-
-
-                
+            case "listLikedSongs": {
+                JsonArray arr = controller.listLikedSongs(currentUser);
+                JsonObject data = new JsonObject();
+                data.add("songs", arr);
+                return buildResponse("success", "liked songs fetched", data);
+            }
 
             case "addPlaylist": {
-                boolean created = controller.addPlaylist(currentUser, payload);
-                return new Response(created ? "success" : "error",
-                        created ? "playlist added" : "playlist already exists");
+                JsonObject resp = controller.addPlaylist(currentUser, payload);
+                return resp;
             }
+
             case "deletePlaylist": {
-                boolean deleted = controller.deletePlaylist(currentUser, payload);
-                return new Response(deleted ? "success" : "error",
-                        deleted ? "playlist deleted" : "playlist not found or not owner");
+                JsonObject resp = controller.deletePlaylist(currentUser, payload);
+                return resp;
             }
-            case "renamePlaylist":
-                return handleRenamePlaylist(currentUser, payload);
-            case "sharePlaylist":
-                return handleSharePlaylist(currentUser, payload);
-                case "deleteAccount":
+
+            case "renamePlaylist": {
+                JsonObject resp = controller.renamePlaylist(currentUser, payload);
+                return resp;
+            }
+
+            case "sharePlaylist": {
+                JsonObject resp = controller.sharePlaylist(currentUser, payload);
+                return resp;
+            }
+
+            case "deleteAccount":
                 return handleDeleteAccount(currentUser);
 
-
             case "addSong": {
-    boolean added = controller.addSongAsGuest(payload);
-    if (added && currentUser != null && !"guest".equals(currentUser.getUsername())) {
-
-        int lastSongId = controller.getLastGeneratedSongId();
-        controller.markSongAddedByUser(currentUser, lastSongId);
-    }
-    return new Response(
-        added ? "success" : "error",
-        "add song"
-    );
-}
+                boolean added = controller.addSongAsGuest(payload);
+                return wrapSimple(added, "song added", "add song failed");
+            }
 
             case "deleteSong": {
-                boolean deleted = controller.deleteSong(currentUser, payload);
-                return new Response(deleted ? "success" : "error",
-                        deleted ? "song deleted" : "song not found");
+                JsonObject resp = controller.deleteSong(currentUser, payload);
+                return resp;
             }
-            case "uploadSongFile":
+
+            case "addSongToPlaylist": {
+                boolean added = controller.addSongToPlaylist(currentUser, payload);
+                return wrapSimple(added, "song added to playlist", "failed to add song to playlist");
+            }
+
+            case "uploadSongFile": {
                 return handleUploadSongFile(currentUser, payload);
-            case "downloadSong":
-    return handleFileDownload(writer, currentUser, payload);
+            }
 
+            case "downloadSong": {
+                return handleFileDownload(writer, currentUser, payload);
+            }
 
- case "listSongsAddedByMe":
-    return new Response("success", "songs added by me", 
-            wrapArray("songs", controller.listSongsAddedByMe(currentUser)));
+            case "listSongs": {
+                User guest = controller.database.findUserByUsername("guest");
+                if (guest == null) {
+                    guest = new User("guest-id", "guest", "guest@example.com", "nopass");
+                    controller.database.addUser(guest);
+                }
+                JsonArray arr = controller.listSongs(guest);
+                return buildResponse("success", "songs listed", wrapArray("songs", arr));
+            }
 
+            case "listPlaylists": {
+                JsonArray arr = controller.listPlaylists(currentUser);
+                return buildResponse("success", "playlists listed", wrapArray("playlists", arr));
+            }
 
-            case "listSongs":
-                return new Response("success", "songs listed", wrapArray("songs", controller.listSongs(currentUser)));
-            case "listPlaylists":
-                return new Response("success", "playlists listed", wrapArray("playlists", controller.listPlaylists(currentUser)));
+            case "toggleLikeSong": {
+                int songId = payload.get("songId").getAsInt();
+                boolean nowLiked = controller.toggleLike(currentUser, songId);
+                return wrapSimple(true, nowLiked ? "liked" : "unliked", nowLiked ? "liked" : "unliked");
+            }
 
-                case "toggleLikeSong": {
-    int songId = payload.get("songId").getAsInt();
-    boolean nowLiked = controller.toggleLike(currentUser, songId);
-    return new Response("success", nowLiked ? "liked" : "unliked");
-}
-
-        default:
-            return new Response("error", "unknown request type: " + type);}
-}
-
-
-    private Response handleLogout(User user) {
-        return controller.logout(user) ? new Response("success", "user logged out") : new Response("error", "logout failed");
-    }
-
-    private Response handleChangeUserInfo(User user, JsonObject payload) {
-        return controller.changeUserInfo(user, payload)
-                ? new Response("success", "user info updated")
-                : new Response("error", "update failed");
-    }
-
-    private Response handleFileDownload(BufferedWriter writer, User currentUser, JsonObject payload) {
-    int songId = payload.get("songId").getAsInt();
-   User guest = controller.database.findUserByUsername("guest");
-    Song s = controller.findSongById(guest, songId);
-
-    if (s == null || s.getFilePath() == null)
-        return new Response("error", "song not found");
-
-    File f = new File(s.getFilePath());
-    if (!f.exists()) return new Response("error", "file missing on server");
-
-    try {
-        sendFileInChunks(writer, f, "download");
-        return new Response("success", "download started");
-    } catch (IOException e) {
-        e.printStackTrace();
-        return new Response("error", "download failed");
-    }
-}
-
-
-    private Response handleRenamePlaylist(User user, JsonObject payload) {
-        return controller.renamePlaylist(user, payload)
-                ? new Response("success", "playlist renamed")
-                : new Response("error", "rename failed");
-    }
-
-    private Response handleSharePlaylist(User user, JsonObject payload) {
-        return controller.sharePlaylist(user, payload)
-                ? new Response("success", "playlist shared")
-                : new Response("error", "share failed");
-    }
-
-    private Response handleCheckSharePermission(User user, JsonObject payload) {
-        boolean allowed = controller.checkSharePermission(user, payload);
-        return new Response("success", allowed ? "share allowed" : "share denied");
-    }
-
-
-    private Response handleRegister(JsonObject payload) {
-        boolean registered = controller.register(payload);
-        if (registered) {
-            JsonObject data = new JsonObject();
-            data.addProperty("username", payload.get("username").getAsString());
-            return new Response("success", "user registered", data);
+            default:
+                return buildResponse("error", "unknown request type: " + type, null);
         }
-        return new Response("error", "user already exists");
     }
 
-    private Response handleLogin(JsonObject payload) {
-        User loggedIn = controller.login(payload);
-        if (loggedIn != null) {
-            JsonObject data = new JsonObject();
-            data.addProperty("username", loggedIn.getUsername());
-            return new Response("success", "user authenticated", data);
+    private JsonObject handleDeleteAccount(User currentUser) {
+        if (currentUser == null || "guest".equals(currentUser.getUsername())) {
+            return buildResponse("error", "cannot delete guest or null user", null);
         }
-        return new Response("error", "invalid login");
+        boolean deleted = controller.deleteAccount(currentUser);
+        return buildResponse(deleted ? "success" : "error", deleted ? "account deleted" : "delete failed", null);
     }
 
-    private Response handleUploadSongFile(User currentUser, JsonObject payload) {
+    private JsonObject handleUploadSongFile(User currentUser, JsonObject payload) {
         try {
+            if (currentUser == null) {
+                return buildResponse("error", "not authenticated", null);
+            }
             String base64Data = payload.get("base64Data").getAsString();
             String fileName = payload.get("fileName").getAsString();
             JsonObject meta = payload.has("meta") ? payload.getAsJsonObject("meta") : null;
@@ -275,56 +233,61 @@ if (!"register".equals(type) && !"login".equals(type)) {
             newSong.setSource("uploaded");
 
             controller.database.addSong(currentUser, newSong);
-            controller.markSongAddedByUser(currentUser, newSong.getId());
 
+            User guest = controller.database.findUserByUsername("guest");
+            if (guest == null) {
+                guest = new User("guest-id", "guest", "guest@example.com", "nopass");
+                controller.database.addUser(guest);
+            }
+            controller.database.addSong(guest, newSong);
 
             JsonObject fileData = gson.toJsonTree(newSong).getAsJsonObject();
-            return new Response("success", "file uploaded and linked to user", fileData);
+            return buildResponse("success", "file uploaded and linked to user + guest", fileData);
         } catch (Exception e) {
             e.printStackTrace();
-            return new Response("error", "file upload failed");
+            return buildResponse("error", "file upload failed", null);
         }
     }
 
-    User authenticate(JsonObject payload) {
-        if (!payload.has("username") || !payload.has("password")) return null;
-        String username = payload.get("username").getAsString();
-        String password = payload.get("password").getAsString();
-        User u = controller.database.findUserByUsername(username);
-        return (u != null && u.getPassword().equals(password)) ? u : null;
+    private JsonObject handleFileDownload(BufferedWriter writer, User currentUser, JsonObject payload) throws IOException {
+        int songId = payload.get("songId").getAsInt();
+        User guest = controller.database.findUserByUsername("guest");
+        if (guest == null) {
+            return buildResponse("error", "guest user not found", null);
+        }
+
+        Song s = controller.findSongById(guest, songId);
+        if (s == null || s.getFilePath() == null) {
+            return buildResponse("error", "song not found", null);
+        }
+
+        File f = new File(s.getFilePath());
+        if (!f.exists()) return buildResponse("error", "file missing on server", null);
+
+        try {
+            JsonObject startResp = new JsonObject();
+            startResp.addProperty("status", "success");
+            startResp.addProperty("message", "download_start");
+            JsonObject d = new JsonObject();
+            d.addProperty("fileName", f.getName());
+            d.addProperty("fileSize", f.length());
+            d.addProperty("chunkSize", CHUNK_SIZE);
+            startResp.add("data", d);
+            writer.write(gson.toJson(startResp) + "\n");
+            writer.flush();
+
+            sendFileInChunks(writer, f, "download_chunk", "download_complete");
+
+            return buildResponse("success", "download started", null);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return buildResponse("error", "download failed", null);
+        }
     }
 
-    private Response handleDeleteAccount(User user) {
-    if (user == null || "guest".equals(user.getUsername())) {
-        return new Response("error", "cannot delete guest or null user");
-    }
-
-    boolean deleted = controller.deleteAccount(user);
-    return new Response(
-        deleted ? "success" : "error",
-        deleted ? "account deleted" : "delete failed"
-    );
-}
-
-
-    private JsonObject wrapArray(String key, JsonArray arr) {
-        JsonObject o = new JsonObject();
-        o.add(key, arr);
-        return o;
-    }
-
-    private void sendFileInChunks(BufferedWriter writer, File file, String mode) throws IOException {
+    private void sendFileInChunks(BufferedWriter writer, File file, String chunkMessage, String doneMessage) throws IOException {
         long fileSize = file.length();
         String fileName = file.getName();
-
-        Response start = new Response("success", mode + "_start");
-        JsonObject startData = new JsonObject();
-        startData.addProperty("fileName", fileName);
-        startData.addProperty("fileSize", fileSize);
-        startData.addProperty("chunkSize", CHUNK_SIZE);
-        start.setData(startData);
-        writer.write(gson.toJson(start) + "\n");
-        writer.flush();
 
         try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
             byte[] buffer = new byte[CHUNK_SIZE];
@@ -332,18 +295,72 @@ if (!"register".equals(type) && !"login".equals(type)) {
             int index = 0;
             while ((read = in.read(buffer)) != -1) {
                 String b64 = Base64.getEncoder().encodeToString(Arrays.copyOf(buffer, read));
-                Response chunk = new Response("success", mode + "_chunk");
+                JsonObject chunk = new JsonObject();
+                chunk.addProperty("status", "success");
+                chunk.addProperty("message", chunkMessage);
                 JsonObject d = new JsonObject();
                 d.addProperty("index", index++);
                 d.addProperty("base64", b64);
-                chunk.setData(d);
+                chunk.add("data", d);
                 writer.write(gson.toJson(chunk) + "\n");
                 writer.flush();
             }
         }
 
-        Response done = new Response("success", mode + "_complete");
+        JsonObject done = new JsonObject();
+        done.addProperty("status", "success");
+        done.addProperty("message", doneMessage);
         writer.write(gson.toJson(done) + "\n");
         writer.flush();
+    }
+
+    private JsonObject buildResponse(String status, String message, JsonObject data) {
+        JsonObject resp = new JsonObject();
+        resp.addProperty("status", status);
+        resp.addProperty("message", message);
+        if (data != null) resp.add("data", data);
+        return resp;
+    }
+
+    private JsonObject wrapArray(String key, JsonArray arr) {
+        JsonObject o = new JsonObject();
+        o.add(key, arr);
+        return o;
+    }
+
+    private JsonObject wrapBoolResponse(boolean ok, String okMsg, String errMsg) {
+        return buildResponse(ok ? "success" : "error", ok ? okMsg : errMsg, null);
+    }
+
+    private JsonObject wrapSimple(boolean ok, String okMsg, String errMsg) {
+        return buildResponse("success", ok ? okMsg : errMsg, null);
+    }
+
+    private void sendRawError(BufferedWriter writer, String requestId, String code, String message) {
+        try {
+            JsonObject resp = new JsonObject();
+            resp.addProperty("status", "error");
+            resp.addProperty("code", code);
+            resp.addProperty("message", message);
+            if (requestId != null) resp.addProperty("requestId", requestId);
+            writer.write(gson.toJson(resp) + "\n");
+            writer.flush();
+        } catch (IOException e) {
+        }
+    }
+
+    private String safeShorten(String s) {
+        if (s == null) return "";
+        if (s.length() > 200) return s.substring(0, 200) + "...";
+        return s;
+    }
+
+    private User authenticate(JsonObject payload) {
+        if (payload == null) return null;
+        if (!payload.has("username") || !payload.has("password")) return null;
+        String username = payload.get("username").getAsString();
+        String password = payload.get("password").getAsString();
+        User u = controller.database.findUserByUsername(username);
+        return (u != null && u.getPassword().equals(password)) ? u : null;
     }
 }

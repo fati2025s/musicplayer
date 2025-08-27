@@ -1,11 +1,10 @@
-// ===================== lib/service/AudioService.dart =====================
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/song.dart';
 import 'SocketService.dart';
-import 'Song.dart';
 
 class AudioService {
   final AudioPlayer _player = AudioPlayer();
@@ -13,7 +12,6 @@ class AudioService {
 
   List<Song> _playlist = [];
   int _currentIndex = 0;
-
   StreamSubscription<int?>? _indexSub;
 
   AudioService({SocketService? socket})
@@ -23,11 +21,9 @@ class AudioService {
     });
   }
 
-  /// آهنگ فعلی
   Song? get currentSong =>
       _playlist.isNotEmpty ? _playlist[_currentIndex] : null;
 
-  // === استریم‌ها برای UI
   Stream<PlayerState> get playerStateStream => _player.playerStateStream;
   Stream<Duration?> get durationStream => _player.durationStream;
   Stream<Duration> get positionStream => _player.positionStream;
@@ -41,58 +37,62 @@ class AudioService {
         return null;
       });
 
-  /// دانلود آهنگ و ذخیره در temp
   Future<File> _downloadSongToFile(Song song) async {
-    // استفاده از Documents Directory به‌جای Temp
     final dir = await getApplicationDocumentsDirectory();
     final file = File("${dir.path}/song_${song.id}.mp3");
 
     if (!await file.exists()) {
       try {
-        print("⬇ شروع دانلود آهنگ: ${song.name}");
-        await socketService.downloadSong(song.id, file.path);
-
-        if (await file.exists()) {
-          print("✅ دانلود کامل شد: ${file.path}");
-          print("📏 حجم فایل: ${await file.length()} بایت");
-        } else {
-          print("❌ فایل دانلود نشد: ${file.path}");
-        }
+        if (kDebugMode) print("⬇ شروع دانلود: ${song.name}");
+        final downloadedFile = await socketService.downloadSong(song.id, file.path);
+        if (kDebugMode) print("✅ دانلود کامل شد: ${downloadedFile.path}");
+        return downloadedFile;
       } catch (e) {
-        print("⚠ خطا در دانلود آهنگ ${song.name}: $e");
+        if (kDebugMode) print("⚠ خطا در دانلود ${song.name}: $e");
         rethrow;
       }
-    } else {
-      print("📂 فایل از قبل وجود داشت: ${file.path}");
-      print("📏 حجم فایل موجود: ${await file.length()} بایت");
     }
-
     return file;
   }
 
 
+  Future<void> playDownloadedSong(Song song) async {
+    try {
+      final file = await _downloadSongToFile(song);
 
-  /// آماده کردن پلی‌لیست
+      await _player.stop();
+      await _player.setFilePath(file.path); // اینجا مطمئن میشی فایل کامل هست
+      _playlist = [song.copyWith(url: file.path, isDownloaded: true)];
+      _currentIndex = 0;
+
+      await _player.play();
+      print(" در حال پخش: ${song.name}");
+    } catch (e) {
+      if (kDebugMode) print(" خطا در پخش ${song.name}: $e");
+    }
+  }
+
+
   Future<void> setPlaylist(List<Song> songs, {int startIndex = 0}) async {
     _playlist = songs;
     _currentIndex = startIndex;
 
     final sources = <AudioSource>[];
 
-    for (var song in songs) {
+    for (var i = 0; i < songs.length; i++) {
+      final song = songs[i];
       try {
-        final file = await _downloadSongToFile(song);
-        final cleanPath = file.path.replaceAll(".mp3.mp3", ".mp3");
-        sources.add(AudioSource.file(file.path));
+        final f = await _downloadSongToFile(song);
+        sources.add(AudioSource.file(f.path));
       } catch (e) {
-        print("⚠ خطا در آماده‌سازی آهنگ ${song.name}: $e");
+        if (song.url.isNotEmpty) {
+          sources.add(AudioSource.uri(Uri.parse(song.url)));
+        } else {
+          if (kDebugMode) print("️ آهنگ ${song.name} نه دانلود شد نه URL داشت");
+        }
       }
     }
 
-    if (sources.isEmpty) {
-      print("❌ هیچ آهنگی قابل پخش نشد!");
-      return;
-    }
 
     final playlistSource = ConcatenatingAudioSource(children: sources);
 
@@ -102,11 +102,10 @@ class AudioService {
         initialIndex: startIndex < sources.length ? startIndex : 0,
       );
     } catch (e) {
-      print("Error setting playlist: $e");
+      if (kDebugMode) print("Error setting playlist: $e");
     }
   }
 
-  /// پخش آهنگ
   Future<void> play() async {
     if (_player.audioSource != null) {
       await _player.play();

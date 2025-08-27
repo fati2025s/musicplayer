@@ -1,4 +1,3 @@
-// ===================== lib/service/SocketService.dart =====================
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -21,15 +20,14 @@ class SocketService {
     try {
       _socket = await Socket.connect(host, port);
       _connected = true;
-      print('✅ Connected to server: $host:$port');
+      print('Connected to server: $host:$port');
 
-      String _buffer = ""; // 🔥 بافر محلی برای جمع‌کردن داده‌ها
+      String _buffer = "";
 
       _socket!.listen((data) {
         final str = utf8.decode(data);
-        _buffer += str; // تکه داده رو اضافه می‌کنیم به بافر
+        _buffer += str;
 
-        // پردازش تا وقتی که خط کامل (با \n) داشته باشیم
         while (_buffer.contains('\n')) {
           final idx = _buffer.indexOf('\n');
           final line = _buffer.substring(0, idx).trim();
@@ -46,18 +44,18 @@ class SocketService {
               _streamController.add(jsonResp);
             }
           } catch (e) {
-            print('❌ Error parsing response: $e | raw: $line');
+            print('Error parsing response: $e | raw: $line');
           }
         }
       }, onDone: () {
         _connected = false;
-        print('🔌 Disconnected from server');
+        print('Disconnected from server');
       }, onError: (err) {
         _connected = false;
-        print('⚠️ Socket error: $err');
+        print('⚠Socket error: $err');
       });
     } catch (e) {
-      print('❌ Error connecting: $e');
+      print('Error connecting: $e');
     }
   }
 
@@ -127,6 +125,15 @@ class SocketService {
     });
   }
 
+  Future<Map<String, dynamic>> addSongToPlaylist(
+      int playlistId, int songId) async {
+    return await _sendWithAuth('addSongToPlaylist', {
+      'playlistId': playlistId,
+      'songId': songId,
+    });
+  }
+
+
   Future<Map<String, dynamic>> logout() async {
     final resp = await _sendWithAuth('logout', {});
     if (resp['status'] == 'success') {
@@ -176,7 +183,6 @@ class SocketService {
 
     final completer = Completer<File>();
 
-    // 🎯 به‌جای sendAndWait از send مستقیم استفاده می‌کنیم
     final prefs = await SharedPreferences.getInstance();
     final username = prefs.getString('username');
     final password = prefs.getString('password');
@@ -193,7 +199,6 @@ class SocketService {
     _socket!.write(jsonEncode(request) + '\n');
     await _socket!.flush();
 
-    // 🎧 گوش دادن به پیام‌ها
     StreamSubscription<Map<String, dynamic>>? subscription;
     subscription = eventsStream.listen((resp) {
       final msg = resp['message'];
@@ -203,7 +208,7 @@ class SocketService {
       } else if (msg == 'download_complete') {
         sink.close();
         subscription?.cancel();
-        print('✅ Download complete: $savePath');
+        print('Download complete: $savePath');
         completer.complete(file);
       }
     });
@@ -238,11 +243,9 @@ class SocketService {
         'newPassword': newPw,
       });
 
-  // آهنگ‌های لایک شده (بک باید متادیتا نگه‌داره)
   Future<Map<String, dynamic>> listLikedSongs() async =>
       await _sendWithAuth('listLikedSongs', {});
 
-  // لایک کردن همراه متادیتا
   Future<Map<String, dynamic>> likeSongWithMeta(
       int songId, Map<String, dynamic> meta) async {
     return await _sendWithAuth('likeSong', {
@@ -262,7 +265,7 @@ class SocketService {
     if (resp['status'] == 'success') {
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
-      close(); // قطع اتصال سوکت
+      close();
     }
     return resp;
   }

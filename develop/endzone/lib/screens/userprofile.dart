@@ -1,11 +1,10 @@
-// lib/screens/user_profile_screen.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// منطقِ سرور از کد اول
 import '../service/SocketService.dart';
+import 'Login.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final SocketService socketService;
@@ -36,7 +35,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     _loadUserData();
   }
 
-  // ---------- Local Load ----------
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     _controllerUsername.text = prefs.getString('username') ?? 'Default User';
@@ -50,7 +48,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     if (mounted) setState(() {});
   }
 
-  // ---------- Save & Sync ----------
   Future<void> _saveUserData() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -63,7 +60,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final newEmail = _controllerEmail.text.trim();
     final newPassword = _controllerPassword.text;
 
-    // همگام‌سازی با سرور (اگر کانکشن برقرار است)
     try {
       if (widget.socketService.isConnected) {
         final payload = <String, dynamic>{};
@@ -77,7 +73,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       if (mounted) _showSnack('Network error while syncing', isError: true);
     }
 
-    // ذخیره‌ی محلی
     await prefs.setString('username', newUsername);
     await prefs.setString('email', newEmail);
     await prefs.setString('password', newPassword);
@@ -91,8 +86,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     }
   }
 
-  // ---------- Pick & Upload Image ----------
-  // ---------- Pick Image (Local only) ----------
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
@@ -101,7 +94,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final file = File(picked.path);
     setState(() => _profileImage = file);
 
-    // ذخیره‌ی محلی مسیر عکس
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('profileImage', file.path);
@@ -109,25 +101,37 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
 
-  // ---------- Logout ----------
   Future<void> _logout() async {
     try {
       if (widget.socketService.isConnected) {
-        await widget.socketService.logout();
+        final resp = await widget.socketService.logout();
+        print('logout response: $resp');
+      } else {
+        print('socket not connected, proceeding to clear prefs');
       }
     } catch (e) {
-      debugPrint('Error in logout: $e');
+      debugPrint('Error in logout (socket): $e');
     }
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+    print('prefs cleared');
 
-    if (mounted) {
-      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    if (!mounted) return;
+
+    try {
+      Navigator.of(context, rootNavigator: true)
+          .pushNamedAndRemoveUntil('/login', (route) => false);
+    } catch (e) {
+      print('pushNamed failed, falling back to direct widget push: $e');
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => Login()),
+            (route) => false,
+      );
     }
   }
 
-  // ---------- Delete Account ----------
+
   Future<void> _deleteAccount() async {
     try {
       if (widget.socketService.isConnected) {
@@ -154,7 +158,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     }
   }
 
-  // ---------- Change Password Dialog ----------
   Future<void> _changePasswordDialog() async {
     final oldController = TextEditingController();
     final newController = TextEditingController();
@@ -220,7 +223,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  // ---------- Pretty Snack ----------
   void _showSnack(String msg, {bool isError = false}) {
     final theme = Theme.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -238,7 +240,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true, // UI شبیه کد دوم
+      extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -247,7 +249,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       ),
       body: Stack(
         children: [
-          // گرادیانت پس‌زمینه
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -259,7 +260,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
           ),
 
-          // محتوا
           SafeArea(
             child: SingleChildScrollView(
               padding:
@@ -268,7 +268,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    // آواتار
                     GestureDetector(
                       onTap: _isEditing ? _pickImage : null,
                       child: CircleAvatar(
@@ -294,7 +293,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Username
                     TextFormField(
                       controller: _controllerUsername,
                       enabled: _isEditing,
@@ -328,7 +326,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Password
                     TextFormField(
                       controller: _controllerPassword,
                       enabled: _isEditing,
@@ -353,7 +350,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
                     const SizedBox(height: 30),
 
-                    // --- دکمه‌ها (بدون Share Playlist) ---
                     _filledActionButton(
                       label: 'Change Password',
                       icon: Icons.lock_reset,
@@ -385,7 +381,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  // استایل ورودی‌ها مثل کد دوم
   InputDecoration _inputDecoration({required String label, required IconData icon}) {
     return InputDecoration(
       labelText: label,

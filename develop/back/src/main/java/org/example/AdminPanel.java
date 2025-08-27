@@ -24,11 +24,11 @@ public class AdminPanel {
             System.out.print("Choose an option (CAREFULLY!): ");
 
             int choice = sc.nextInt();
-            sc.nextLine(); 
+            sc.nextLine();
 
             switch (choice) {
                 case 1:
-                    admin.getAllUsers().forEach(u -> 
+                    admin.getAllUsers().forEach(u ->
                         System.out.println(u.getId() + " | " + u.getUsername())
                     );
                     break;
@@ -40,14 +40,14 @@ public class AdminPanel {
                     break;
 
                 case 3:
-                    System.out.print("Enter user ID to delete: ");
-                    String uid = sc.nextLine();
-                    boolean userRemoved = admin.deleteUser(uid);
+                    System.out.print("Enter username to delete: ");
+                    String unameToDelete = sc.nextLine();
+                    boolean userRemoved = admin.deleteUser(unameToDelete);
                     System.out.println(userRemoved ? "User deleted successfully." : "User not found!");
                     break;
 
                 case 4:
-                    admin.getAllSongs().forEach(song -> 
+                    admin.getAllSongs().forEach(song ->
                         System.out.println(song.getId() + " | " + song.getName())
                     );
                     break;
@@ -60,7 +60,7 @@ public class AdminPanel {
                     break;
 
                 case 6:
-                    admin.getTop20MostLikedSongs().forEach(song -> 
+                    admin.getTop20MostLikedSongs().forEach(song ->
                         System.out.println(song.getId() + " | " + song.getName() +
                                            " (Likes: " + song.getLikeCount() + ")")
                     );

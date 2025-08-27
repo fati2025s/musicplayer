@@ -9,16 +9,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 
 public class Database {
     private final Map<String, User> users = new ConcurrentHashMap<>();
     private final Map<String, Set<Integer>> userLikedSongs = new ConcurrentHashMap<>();
-private final Map<String, List<Integer>> songsAddedByMe = new HashMap<>();
-
-
 
     private static final String DB_FILE = "database.json";
     public static final String UPLOADS_ROOT = "uploads";
@@ -34,19 +30,37 @@ private final Map<String, List<Integer>> songsAddedByMe = new HashMap<>();
 
     private synchronized void saveToFile() {
         try (FileWriter writer = new FileWriter(DB_FILE)) {
-            gson.toJson(users, writer);
+            DatabaseState state = new DatabaseState();
+            state.users = new HashMap<>(users);
+            state.userLikedSongs = new HashMap<>(userLikedSongs);
+            state.playlistId = playlistIdGenerator.get();
+            state.songId = songIdGenerator.get();
+            gson.toJson(state, writer);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    private static class DatabaseState {
+        Map<String, User> users;
+        Map<String, Set<Integer>> userLikedSongs;
+        int playlistId;
+        int songId;
+    }
+
     public synchronized void loadFromFile() {
         try (FileReader reader = new FileReader(DB_FILE)) {
-            Type type = new TypeToken<Map<String, User>>() {}.getType();
-            Map<String, User> loaded = gson.fromJson(reader, type);
-            if (loaded != null) {
+            Type type = new TypeToken<DatabaseState>(){}.getType();
+            DatabaseState st = gson.fromJson(reader, type);
+            if (st != null) {
                 users.clear();
-                users.putAll(loaded);
+                users.putAll(st.users != null ? st.users : Collections.emptyMap());
+
+                userLikedSongs.clear();
+                if (st.userLikedSongs != null) userLikedSongs.putAll(st.userLikedSongs);
+
+                playlistIdGenerator.set(Math.max(st.playlistId, findMaxPlaylistId() + 1));
+                songIdGenerator.set(Math.max(st.songId, findMaxSongId() + 1));
             }
         } catch (IOException e) {
             System.out.println("No existing DB file, starting fresh.");
@@ -72,93 +86,96 @@ private final Map<String, List<Integer>> songsAddedByMe = new HashMap<>();
         return null;
     }
 
+    public boolean toggleLike(User user, int songIdFromClient) {
+        Song song = findSongByIdGlobal(songIdFromClient);
+        if (song == null) return false;
 
+        int realId = song.getId();
+        Set<Integer> liked = userLikedSongs.computeIfAbsent(user.getUsername(),
+                                k -> ConcurrentHashMap.newKeySet());
 
-public boolean addSongByUser(User user, int songId) {
-    songsAddedByMe.putIfAbsent(user.getId(), new ArrayList<>());
-    songsAddedByMe.get(user.getId()).add(songId);
-    return true;
-}
-public List<Integer> getSongsAddedByUser(User user) {
-    return songsAddedByMe.getOrDefault(user.getId(), new ArrayList<>());
-}
+        boolean nowLiked;
+        if (liked.contains(realId)) {
+            liked.remove(realId);
+            decrementSongLike(realId);
+            nowLiked = false;
+        } else {
+            liked.add(realId);
+            incrementSongLike(realId);
+            nowLiked = true;
+        }
 
-
-
-    public boolean toggleLike(User user, int songId) {
-    userLikedSongs.putIfAbsent(user.getUsername(), new HashSet<>());
-    Set<Integer> liked = userLikedSongs.get(user.getUsername());
-
-    if (liked.contains(songId)) {
-        liked.remove(songId);
-        decrementSongLike(songId);
         saveToFile();
-        return false;
-    } else {
-        liked.add(songId);
-        incrementSongLike(songId);
-        saveToFile();
-        return true;
+        return nowLiked;
     }
-}
 
-private void incrementSongLike(int songId) {
-    for (User u : users.values()) {
-        for (Song s : u.getSongs()) {
-            if (s.getId() == songId) {
-                s.setLikeCount(s.getLikeCount() + 1);
-                return;
+    public Song findSongByIdGlobal(int songId) {
+        synchronized (users) {
+            for (User u : users.values()) {
+                for (Song s : u.getSongs()) {
+                    if (s.getId() == songId) return s;
+                }
             }
         }
+        return null;
     }
-}
 
-public List<Song> getLikedSongs(User user) {
-    if (user == null) return Collections.emptyList();
-
-    Set<Integer> likedIds = userLikedSongs.getOrDefault(user.getUsername(), Collections.emptySet());
-    if (likedIds.isEmpty()) return Collections.emptyList();
-
-    List<Song> result = new ArrayList<>();
-
-    User guest = users.get("guest");
-    if (guest == null) return Collections.emptyList();
-
-    synchronized (guest) {
-        for (Song s : guest.getSongs()) {
-            if (likedIds.contains(s.getId())) {
-                result.add(s);
+    private void incrementSongLike(int songId) {
+        for (User u : users.values()) {
+            for (Song s : u.getSongs()) {
+                if (s.getId() == songId) {
+                    s.setLikeCount(s.getLikeCount() + 1);
+                    return;
+                }
             }
         }
     }
 
-    return result;
-}
+    public List<Song> getLikedSongs(User user) {
+        if (user == null) return Collections.emptyList();
+        Set<Integer> likedIds = userLikedSongs.getOrDefault(user.getUsername(), Collections.emptySet());
+        if (likedIds.isEmpty()) return Collections.emptyList();
 
+        List<Song> result = new ArrayList<>();
+        for (Song s : getAllSongs()) {
+            if (likedIds.contains(s.getId())) result.add(s);
+        }
+        return result;
+    }
 
+    private int findMaxSongId() {
+        return getAllSongs().stream().mapToInt(Song::getId).max().orElse(0);
+    }
+    private int findMaxPlaylistId() {
+        int max = 0;
+        for (User u : users.values()) {
+            for (Playlist p : u.getPlaylists()) {
+                if (p.getId() > max) max = p.getId();
+            }
+        }
+        return max;
+    }
 
-private void decrementSongLike(int songId) {
-    for (User u : users.values()) {
-        for (Song s : u.getSongs()) {
-            if (s.getId() == songId && s.getLikeCount() > 0) {
-                s.setLikeCount(s.getLikeCount() - 1);
-                return;
+    private void decrementSongLike(int songId) {
+        for (User u : users.values()) {
+            for (Song s : u.getSongs()) {
+                if (s.getId() == songId && s.getLikeCount() > 0) {
+                    s.setLikeCount(s.getLikeCount() - 1);
+                    return;
+                }
             }
         }
     }
-}
 
-public boolean hasUserLikedSong(User user, int songId) {
-    return userLikedSongs
-            .getOrDefault(user.getUsername(), Collections.emptySet())
-            .contains(songId);
-}
+    public boolean hasUserLikedSong(User user, int songId) {
+        return userLikedSongs
+                .getOrDefault(user.getUsername(), Collections.emptySet())
+                .contains(songId);
+    }
 
-public Map<String, Set<Integer>> getUserLikedSongs() {
-    return userLikedSongs;
-}
-
-
+    public Map<String, Set<Integer>> getUserLikedSongs() {
+        return userLikedSongs;
+    }
 
     public User findUserByUsername(String username) {
         return users.get(username);
@@ -177,6 +194,7 @@ public Map<String, Set<Integer>> getUserLikedSongs() {
         if (user == null) return false;
         if (!users.containsKey(user.getUsername())) return false;
         users.remove(user.getUsername());
+        userLikedSongs.remove(user.getUsername());
         saveToFile();
         return true;
     }
@@ -186,28 +204,29 @@ public Map<String, Set<Integer>> getUserLikedSongs() {
     }
 
     public boolean addPlaylist(User user, Playlist playlist) {
-    synchronized (user) {
-        for (Playlist p : user.getPlaylists()) {
-            if (p.getName().equalsIgnoreCase(playlist.getName())) {
-                return false;
+        synchronized (user) {
+            for (Playlist p : user.getPlaylists()) {
+                if (p.getName().equalsIgnoreCase(playlist.getName())) {
+                    return false;
+                }
             }
+
+            playlist.setId(playlistIdGenerator.getAndIncrement());
+
+            System.out.println("Database: created playlist id=" + playlist.getId() + " name=" + playlist.getName());
+
+            boolean isOwner = Objects.equals(playlist.getOwnerUsername(), user.getUsername());
+            if (playlist.isShared() && !isOwner) {
+                playlist.setReadOnly(true);
+            } else if (isOwner) {
+                playlist.setReadOnly(false);
+            }
+
+            user.getPlaylists().add(playlist);
+            saveToFile();
+            return true;
         }
-
-        playlist.setId(playlistIdGenerator.getAndIncrement());
-
-        boolean isOwner = Objects.equals(playlist.getOwnerUsername(), user.getUsername());
-        if (playlist.isShared() && !isOwner) {
-            playlist.setReadOnly(true);
-        } else if (isOwner) {
-            playlist.setReadOnly(false);
-        }
-
-        user.getPlaylists().add(playlist);
-        saveToFile();
-        return true;
     }
-}
-
 
     public boolean deletePlaylist(User user, int playlistId) {
         synchronized (user) {
@@ -242,38 +261,52 @@ public Map<String, Set<Integer>> getUserLikedSongs() {
         }
     }
 
-    public boolean addSongToPlaylist(User user, int playlistId, Song song) {
-    synchronized (user) {
-        Playlist p = findPlaylistById(user, playlistId);
-        if (p == null) return false;
+    public boolean addSongToPlaylist(User user, int playlistId, int songId) {
+        synchronized (user) {
+            Playlist p = findPlaylistById(user, playlistId);
+            if (p == null) return false;
 
-        if (p.isReadOnly() || !Objects.equals(p.getOwnerUsername(), user.getUsername())) return false;
+            if (p.isReadOnly()) return false;
 
-        song.setId(songIdGenerator.getAndIncrement());
-        p.addSong(song);
-        saveToFile();
-        return true;
+            User guest = users.get("guest");
+            if (guest == null) return false;
+
+            Song songToAdd = null;
+            for (Song s : guest.getSongs()) {
+                if (s.getId() == songId) {
+                    songToAdd = s;
+                    break;
+                }
+            }
+            if (songToAdd == null) return false;
+
+            boolean already = p.getSongs().stream().anyMatch(s -> s.getId() == songId);
+            if (already) return false;
+
+            p.addSong(songToAdd);
+            saveToFile();
+            return true;
+        }
     }
-}
 
     public boolean removeSongFromPlaylist(User user, int playlistId, int songId) {
-    synchronized (user) {
-        Playlist p = findPlaylistById(user, playlistId);
-        if (p == null) return false;
+        synchronized (user) {
+            Playlist p = findPlaylistById(user, playlistId);
+            if (p == null) return false;
 
-        if (p.isReadOnly() || !Objects.equals(p.getOwnerUsername(), user.getUsername())) return false;
+            if (p.isReadOnly() || !Objects.equals(p.getOwnerUsername(), user.getUsername())) return false;
 
-        Song toRemove = p.getSongs().stream()
-                .filter(s -> s.getId() == songId)
-                .findFirst()
-                .orElse(null);
-        if (toRemove == null) return false;
+            Song toRemove = p.getSongs().stream()
+                    .filter(s -> s.getId() == songId)
+                    .findFirst()
+                    .orElse(null);
+            if (toRemove == null) return false;
 
-        p.removeSong(toRemove);
-        saveToFile();
-        return true;
+            p.removeSong(toRemove);
+            saveToFile();
+            return true;
+        }
     }
-}
 
     public synchronized boolean removePlaylist(User user, Playlist playlist) {
         if (user == null || playlist == null) return false;
@@ -303,8 +336,6 @@ public Map<String, Set<Integer>> getUserLikedSongs() {
             return removed;
         }
     }
-
-    
 
     public Song findSongById(User user, int songId) {
         synchronized (user) {
@@ -337,70 +368,67 @@ public Map<String, Set<Integer>> getUserLikedSongs() {
         return removed;
     }
 
-
-public User findUserByEmail(String email) {
-    synchronized (users) {
-        return users.values().stream()
-                .filter(u -> u.getEmail().equals(email))
-                .findFirst()
-                .orElse(null);
-    }
-}
-
-public boolean updateUser(User user) {
-    if (user == null) return false;
-    synchronized (users) {
-        if (!users.containsKey(user.getUsername())) return false;
-        users.put(user.getUsername(), user);
-        saveToFile();
-        return true;
-    }
-}
-
-public boolean logoutUser(User user) {
-    return user != null;
-}
-
-public boolean renamePlaylist(User user, int playlistId, String newName) {
-    synchronized (user) {
-        Playlist pl = findPlaylistById(user, playlistId);
-        if (pl == null) return false;
-
-        for (Playlist p : user.getPlaylists()) {
-            if (p.getName().equals(newName)) return false;
-        }
-        pl.setName(newName);
-        saveToFile();
-        return true;
-    }
-}
-
-public List<Playlist> getPlaylists(User user) {
-    synchronized (user) {
-        return new ArrayList<>(user.getPlaylists());
-    }
-}
-
-public List<Song> getAllSongs() {
-    List<Song> all = new ArrayList<>();
-    synchronized (users) {
-        for (User u : users.values()) {
-            all.addAll(u.getSongs());
+    public User findUserByEmail(String email) {
+        synchronized (users) {
+            return users.values().stream()
+                    .filter(u -> u.getEmail().equals(email))
+                    .findFirst()
+                    .orElse(null);
         }
     }
-    return all;
-}
 
-public List<Song> getAllSongsSortedByLikes() {
-    List<Song> all = getAllSongs();
-    all.sort(Comparator.comparingInt(Song::getLikeCount).reversed());
-    return all;
-}
+    public boolean updateUser(User user) {
+        if (user == null) return false;
+        synchronized (users) {
+            if (!users.containsKey(user.getUsername())) return false;
+            users.put(user.getUsername(), user);
+            saveToFile();
+            return true;
+        }
+    }
 
-public void save() {
+    public boolean logoutUser(User user) {
+        return user != null;
+    }
 
-    throw new UnsupportedOperationException("Unimplemented method 'save'");
-}
+    public boolean renamePlaylist(User user, int playlistId, String newName) {
+        synchronized (user) {
+            Playlist pl = findPlaylistById(user, playlistId);
+            if (pl == null) return false;
 
+            for (Playlist p : user.getPlaylists()) {
+                if (p.getName().equals(newName)) return false;
+            }
+            pl.setName(newName);
+            saveToFile();
+            return true;
+        }
+    }
+
+    public List<Playlist> getPlaylists(User user) {
+        synchronized (user) {
+            return new ArrayList<>(user.getPlaylists());
+        }
+    }
+
+    public List<Song> getAllSongs() {
+        List<Song> all = new ArrayList<>();
+        synchronized (users) {
+            for (User u : users.values()) {
+                all.addAll(u.getSongs());
+            }
+        }
+        return all;
+    }
+
+    public List<Song> getAllSongsSortedByLikes() {
+        List<Song> all = getAllSongs();
+        all.sort(Comparator.comparingInt(Song::getLikeCount).reversed());
+        return all;
+    }
+
+    public void save() {
+        saveToFile();
+    }
 
 }

@@ -1,4 +1,3 @@
-// ===================== lib/service/MusicService.dart =====================
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_media_metadata/flutter_media_metadata.dart';
@@ -10,7 +9,6 @@ class MusicService {
 
   MusicService(this.socketService);
 
-  /// انتخاب یک آهنگ و آپلود به سرور
   Future<Song?> pickAndUploadSong() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -20,69 +18,113 @@ class MusicService {
 
     if (result == null || result.files.isEmpty) return null;
 
-    final pickedFile = result.files.first;
-    final file = File(pickedFile.path!);
+    final picked = result.files.first;
+    if (picked.path == null) return null;
+    final file = File(picked.path!);
 
     try {
       final metadata = await MetadataRetriever.fromFile(file);
 
-      // ارسال فایل به سرور
-      final response = await socketService.uploadSongFile(file.path, {
-        "title": metadata.trackName ?? pickedFile.name,
+      final meta = {
+        "title": metadata.trackName ?? picked.name,
         "artist": metadata.albumArtistName ??
-            (metadata.trackArtistNames?.join(', ') ?? "Unknown"),
-      });
+            (metadata.trackArtistNames?.join(', ') ?? "Unknown")
+      };
 
-      if (response["status"] == "success" && response["data"] != null) {
-        // سرور باید id واقعی رو بده
-        return Song.fromJson(response["data"]);
-      } else {
-        print("⚠ خطا در آپلود آهنگ: ${response["message"]}");
-        return null;
-      }
+      final resp = await socketService.uploadSongFile(file.path, meta);
+
+      final song = Song(
+        id: resp['songId'],
+        name: metadata.trackName ?? picked.name,
+        artist: metadata.albumArtistName ??
+            (metadata.trackArtistNames?.join(', ') ?? "Unknown"),
+        url: file.path,
+        source: SongSource.server,
+        isDownloaded: true,
+      );
+
+      return song;
     } catch (e) {
       print("خطا در خواندن اطلاعات فایل یا آپلود: $e");
       return null;
     }
   }
 
-  /// انتخاب پوشه و آپلود همه آهنگ‌ها (آپلود موازی)
   Future<List<Song>> pickFolderAndUploadSongs() async {
+    List<Song> songsList = [];
+
     String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
     if (selectedDirectory == null) return [];
 
     final dir = Directory(selectedDirectory);
     final files = dir.listSync(recursive: true);
 
-    // فقط فایل‌های mp3
-    final mp3Files = files
-        .where((f) => f is File && f.path.toLowerCase().endsWith(".mp3"))
-        .cast<File>();
+    for (var entry in files) {
+      if (entry is File && entry.path.toLowerCase().endsWith(".mp3")) {
+        final file = entry;
+        try {
+          final metadata = await MetadataRetriever.fromFile(file);
 
-    // آپلود موازی همه فایل‌ها
-    final futures = mp3Files.map((file) async {
-      try {
-        final metadata = await MetadataRetriever.fromFile(file);
+          final meta = {
+            "title": metadata.trackName ?? file.uri.pathSegments.last,
+            "artist": metadata.albumArtistName ?? "Unknown",
+          };
 
-        final response = await socketService.uploadSongFile(file.path, {
-          "title": metadata.trackName ?? file.uri.pathSegments.last,
-          "artist": metadata.albumArtistName ??
-              (metadata.trackArtistNames?.join(', ') ?? "Unknown"),
-        });
+          final resp = await socketService.uploadSongFile(file.path, meta);
 
-        if (response["status"] == "success" && response["data"] != null) {
-          return Song.fromJson(response["data"]);
-        } else {
-          print("⚠ خطا در آپلود ${file.path}: ${response["message"]}");
-          return null;
+          songsList.add(
+            Song(
+              id: resp['songId'],
+              name: metadata.trackName ?? file.uri.pathSegments.last,
+              artist: metadata.albumArtistName ?? "Unknown",
+              url: file.path,
+              source: SongSource.server,
+              isDownloaded: true,
+            ),
+          );
+        } catch (e) {
+          print("خطا در خواندن/آپلود فایل ${file.path}: $e");
         }
-      } catch (e) {
-        print("خطا در خواندن/آپلود فایل ${file.path}: $e");
-        return null;
       }
-    });
+    }
 
-    final results = await Future.wait(futures);
-    return results.whereType<Song>().toList();
+    return songsList;
+  }
+
+  Future<List<Song>> loadFolderAsServerSongs({String? directoryPath}) async {
+    List<Song> songsList = [];
+
+    String? selectedDirectory = directoryPath;
+    if (selectedDirectory == null) {
+      selectedDirectory = await FilePicker.platform.getDirectoryPath();
+      if (selectedDirectory == null) return [];
+    }
+
+    final dir = Directory(selectedDirectory);
+    final files = dir.listSync(recursive: true);
+
+    for (var entry in files) {
+      if (entry is File && entry.path.toLowerCase().endsWith(".mp3")) {
+        final file = entry;
+        try {
+          final metadata = await MetadataRetriever.fromFile(file);
+
+          songsList.add(
+            Song(
+              id: file.hashCode,
+              name: metadata.trackName ?? file.uri.pathSegments.last,
+              artist: metadata.albumArtistName ?? "Unknown",
+              url: file.path,
+              source: SongSource.server,
+              isDownloaded: true,
+            ),
+          );
+        } catch (e) {
+          print("خطا در خواندن اطلاعات فایل ${file.path}: $e");
+        }
+      }
+    }
+
+    return songsList;
   }
 }

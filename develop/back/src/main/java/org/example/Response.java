@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 public class Response {
-    private String status;       // success | error
+    private String status;
     private String message;
     private JsonObject data;
     private String requestId;

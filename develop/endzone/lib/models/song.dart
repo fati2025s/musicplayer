@@ -2,11 +2,13 @@ enum SongSource {
   local,
   uploaded,
   server,
-}class Song {
+}
+
+class Song {
   final int id;
-  final String name;         // از "title" پر میشه
+  final String name;
   final String artist;
-  final String url;          // اجباری نباشه چون JSON نداره
+  final String url;
   final String? coverUrl;
   final SongSource source;
   bool isLiked;
@@ -18,7 +20,7 @@ enum SongSource {
     required this.id,
     required this.name,
     required this.artist,
-    this.url = "",                 // 👈 دیگه required نیست
+    this.url = "",
     this.coverUrl,
     this.source = SongSource.server,
     this.isLiked = false,
@@ -30,9 +32,11 @@ enum SongSource {
   factory Song.fromJson(Map<String, dynamic> json) {
     return Song(
       id: json['id'] ?? 0,
-      name: json['title'] ?? "",                   // 👈 با title هماهنگ شد
-      artist: json['artist'] ?? "Unknown",
-      url: json['url'] ?? "",                      // 👈 safe برای null
+      name: json['title'] ?? json['name'] ?? json['songName'] ?? "",
+      artist: (json['artist'] as String?)?.trim().isNotEmpty == true
+          ? json['artist']
+          : "Unknown",
+      url: json['url'] ?? "",
       coverUrl: json['coverUrl'],
       source: SongSource.values.firstWhere(
             (e) => e.name == (json['source'] ?? "server"),
@@ -40,9 +44,11 @@ enum SongSource {
       ),
       isLiked: json['isLiked'] ?? false,
       isDownloaded: json['isDownloaded'] ?? false,
-      likeCount: json['likeCount'] ?? 0,           // 👈 اضافه شد
+      likeCount: json['likeCount'] ?? 0,
       lastPlayedAt: json['lastPlayedAt'] != null
-          ? DateTime.tryParse(json['lastPlayedAt'])
+          ? (json['lastPlayedAt'] is int
+          ? DateTime.fromMillisecondsSinceEpoch(json['lastPlayedAt'])
+          : DateTime.tryParse(json['lastPlayedAt']))
           : null,
     );
   }
@@ -50,7 +56,7 @@ enum SongSource {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'title': name,             // 👈 برای سرور هم title برمی‌گردونیم
+      'title': name,
       'artist': artist,
       'url': url,
       'coverUrl': coverUrl,

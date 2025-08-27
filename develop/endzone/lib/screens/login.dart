@@ -14,6 +14,7 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
   final GlobalKey<FormState> _formKey = GlobalKey();
+
   final TextEditingController _controllerUsername = TextEditingController();
   final TextEditingController _controllerPassword = TextEditingController();
 
@@ -51,14 +52,11 @@ class _LoginState extends State<Login> {
   }
 
   Future<void> _login() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-
     final username = _controllerUsername.text.trim();
     final password = _controllerPassword.text;
-    final passwordRegex = RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}\$');
 
-    if (!passwordRegex.hasMatch(password)) {
-      _showToast("Password must contain at least 8 characters, including upper, lower, and number.");
+    if (username.isEmpty || password.isEmpty) {
+      _showToast("Please fill all fields.");
       return;
     }
 
@@ -67,10 +65,6 @@ class _LoginState extends State<Login> {
 
       if (response["status"] == "success") {
         _showToast("Login successful!", color: Colors.green);
-
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString("username", username);
-        await prefs.setString("password", password);
 
         Navigator.pushReplacement(
           context,
@@ -95,61 +89,74 @@ class _LoginState extends State<Login> {
           child: Column(
             children: [
               const SizedBox(height: 150),
-              Text("Welcome back", style: Theme.of(context).textTheme.headlineLarge),
+              Text("Welcome back",
+                  style: Theme.of(context).textTheme.headlineLarge),
               const SizedBox(height: 10),
-              Text("Login to your account", style: Theme.of(context).textTheme.bodyMedium),
+              Text("Login to your account",
+                  style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 60),
-
-              // Username
               TextFormField(
                 controller: _controllerUsername,
                 keyboardType: TextInputType.name,
                 decoration: InputDecoration(
                   labelText: "Username",
                   prefixIcon: const Icon(Icons.person_outline),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
-                validator: (value) => value == null || value.isEmpty ? "Enter username" : null,
               ),
               const SizedBox(height: 10),
-
-              // Password
               TextFormField(
                 controller: _controllerPassword,
                 obscureText: _obscurePassword,
                 keyboardType: TextInputType.visiblePassword,
                 decoration: InputDecoration(
                   labelText: "Password",
-                  prefixIcon: const Icon(Icons.lock_outline),
+                  prefixIcon: const Icon(Icons.password_outlined),
                   suffixIcon: IconButton(
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                    icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                    icon: _obscurePassword
+                        ? const Icon(Icons.visibility_outlined)
+                        : const Icon(Icons.visibility_off_outlined),
                   ),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
-                validator: (value) => value == null || value.isEmpty ? "Enter password" : null,
               ),
-
               const SizedBox(height: 60),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                onPressed: _login,
-                child: const Text("Login"),
-              ),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Column(
                 children: [
-                  const Text("Don't have an account?"),
-                  TextButton(
-                    onPressed: () {
-                      _formKey.currentState?.reset();
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const Signup()));
-                    },
-                    child: const Text("Signup"),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20)),
+                    ),
+                    onPressed: _login,
+                    child: const Text("Login"),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Don't have an account?"),
+                      TextButton(
+                        onPressed: () {
+                          _formKey.currentState?.reset();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const Signup(),
+                            ),
+                          );
+                        },
+                        child: const Text("Signup"),
+                      ),
+                    ],
                   ),
                 ],
               ),

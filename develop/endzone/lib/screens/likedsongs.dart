@@ -25,7 +25,6 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
     });
 
     try {
-      // 1) گرفتن همه آهنگ‌ها (و بررسی status)
       final allResp = await SocketService().listSongs();
       if (allResp['status'] != 'success' || allResp['data'] == null) {
         debugPrint('Failed to load all songs: $allResp');
@@ -38,12 +37,10 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
           .map((e) => Song.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
 
-      // تبدیل به نقشه برای lookup سریع
       final Map<int, Song> allById = {
         for (var s in allSongs) s.id: s,
       };
 
-      // 2) گرفتن آیدی‌های لایک‌شده — توجه: سرور هم data.songs می‌فرسته
       final likedResp = await SocketService().listLikedSongs();
       if (likedResp['status'] != 'success' || likedResp['data'] == null) {
         debugPrint('Failed to load liked ids: $likedResp');
@@ -53,7 +50,6 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
 
       final likedRaw = likedResp['data']['songs'] as List? ?? [];
 
-      // 3) تبدیل id ها به int ایمن
       final likedIds = <int>[];
       for (var v in likedRaw) {
         if (v is int) {
@@ -66,14 +62,12 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
         }
       }
 
-      // 4) ساخت لیست آهنگ‌های لایک‌شده از روی نقشه
       final result = <Song>[];
       for (var id in likedIds) {
         final s = allById[id];
         if (s != null) {
           result.add(s);
         } else {
-          // اگر آهنگ در allSongs نبود، می‌تونی لاگ بزنی یا یه fallback بسازی
           debugPrint('Liked song id $id not found in all songs');
         }
       }

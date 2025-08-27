@@ -53,131 +53,205 @@ public class Controller {
         return database.updateUser(user);
     }
 
-   public boolean addPlaylist(User user, JsonObject payload) {
-    String name = payload.get("name").getAsString();
+    public JsonObject addPlaylist(User user, JsonObject payload) {
+        String name = payload.get("name").getAsString();
 
-    if (database.findPlaylistByName(user, name) != null) return false;
+        JsonObject resp = new JsonObject();
 
-    Playlist p = new Playlist(0, name, user.getUsername());
-    p.setShared(false);
-    p.setReadOnly(false);
+        if (database.findPlaylistByName(user, name) != null) {
+            resp.addProperty("status", "error");
+            resp.addProperty("message", "Playlist already exists");
+            return resp;
+        }
 
-    return database.addPlaylist(user, p);
-}
+        Playlist p = new Playlist(0, name, user.getUsername());
+        p.setShared(false);
+        p.setReadOnly(false);
 
+        boolean added = database.addPlaylist(user, p);
+        if (!added) {
+            resp.addProperty("status", "error");
+            resp.addProperty("message", "Failed to add playlist");
+            return resp;
+        }
 
-    public boolean deletePlaylist(User user, JsonObject payload) {
-    int id = payload.get("playlistId").getAsInt();
-    Playlist pl = database.findPlaylistById(user, id);
-    if (pl == null) return false;
-    if (!Objects.equals(pl.getOwnerUsername(), user.getUsername())) return false;
-    return database.deletePlaylist(user, id);
-}
+        JsonObject data = new JsonObject();
+        data.addProperty("id", p.getId());
+        data.addProperty("name", p.getName());
+        data.addProperty("ownerUsername", p.getOwnerUsername());
+        data.addProperty("isShared", p.isShared());
+        data.addProperty("readOnly", p.isReadOnly());
+        data.addProperty("numberOfSongs", p.getNumberOfSongs());
 
-public boolean renamePlaylist(User user, JsonObject payload) {
-    int playlistId = payload.get("playlistId").getAsInt();
-    String newName = payload.get("newName").getAsString();
-    Playlist pl = database.findPlaylistById(user, playlistId);
-    if (pl == null) return false;
-    if (!Objects.equals(pl.getOwnerUsername(), user.getUsername())) return false;
-    return database.renamePlaylist(user, playlistId, newName);
-}
+        resp.addProperty("status", "success");
+        resp.add("data", data);
+        return resp;
+    }
 
+    public JsonObject deletePlaylist(User user, JsonObject payload) {
+        JsonObject resp = new JsonObject();
+        int id = payload.get("playlistId").getAsInt();
+        Playlist pl = database.findPlaylistById(user, id);
+        if (pl == null) {
+            resp.addProperty("status", "error");
+            resp.addProperty("message", "Playlist not found");
+            return resp;
+        }
+        if (!Objects.equals(pl.getOwnerUsername(), user.getUsername())) {
+            resp.addProperty("status", "error");
+            resp.addProperty("message", "No permission");
+            return resp;
+        }
+        boolean ok = database.deletePlaylist(user, id);
+        resp.addProperty("status", ok ? "success" : "error");
+        if (!ok) resp.addProperty("message", "Failed to delete");
+        return resp;
+    }
 
-   public boolean sharePlaylist(User user, JsonObject payload) {
-    int playlistId = payload.get("playlistId").getAsInt();
+    public JsonObject renamePlaylist(User user, JsonObject payload) {
+        JsonObject resp = new JsonObject();
+        int playlistId = payload.get("playlistId").getAsInt();
+        String newName = payload.get("newName").getAsString();
+        Playlist pl = database.findPlaylistById(user, playlistId);
+        if (pl == null) {
+            resp.addProperty("status", "error");
+            resp.addProperty("message", "Playlist not found");
+            return resp;
+        }
+        if (!Objects.equals(pl.getOwnerUsername(), user.getUsername())) {
+            resp.addProperty("status", "error");
+            resp.addProperty("message", "No permission");
+            return resp;
+        }
+        boolean ok = database.renamePlaylist(user, playlistId, newName);
+        resp.addProperty("status", ok ? "success" : "error");
+        if (ok) {
+            JsonObject data = new JsonObject();
+            data.addProperty("id", pl.getId());
+            data.addProperty("name", newName);
+            resp.add("data", data);
+        } else {
+            resp.addProperty("message", "Failed to rename");
+        }
+        return resp;
+    }
 
-    String targetUsername = payload.has("targetUsername")
-            ? payload.get("targetUsername").getAsString()
-            : null;
+    public JsonObject sharePlaylist(User user, JsonObject payload) {
+        JsonObject resp = new JsonObject();
 
-    Playlist pl = database.findPlaylistById(user, playlistId);
-    if (pl == null) return false;
+        int playlistId = payload.get("playlistId").getAsInt();
+        String targetUsername = payload.has("targetUsername") ? payload.get("targetUsername").getAsString() : null;
 
-    if (!Objects.equals(pl.getOwnerUsername(), user.getUsername())) return false;
+        Playlist pl = database.findPlaylistById(user, playlistId);
+        if (pl == null) {
+            resp.addProperty("status", "error");
+            resp.addProperty("message", "Playlist not found");
+            return resp;
+        }
+        if (!Objects.equals(pl.getOwnerUsername(), user.getUsername())) {
+            resp.addProperty("status", "error");
+            resp.addProperty("message", "No permission");
+            return resp;
+        }
+        if (targetUsername == null) {
+            resp.addProperty("status", "error");
+            resp.addProperty("message", "targetUsername required");
+            return resp;
+        }
 
-    if (targetUsername == null) return false;
-    User target = database.findUserByUsername(targetUsername);
+        User target = database.findUserByUsername(targetUsername);
+        if (target == null) {
+            resp.addProperty("status", "error");
+            resp.addProperty("message", "Target user not found");
+            return resp;
+        }
 
-    if (target == null) return false;
+        Playlist ref = new Playlist(0, pl.getName(), pl.getOwnerUsername());
+        ref.setSongs(new ArrayList<>(pl.getSongs()));
+        ref.setShared(true);
+        ref.setReadOnly(true);
 
-    Playlist ref = new Playlist(0, pl.getName(), pl.getOwnerUsername());
-    ref.setSongs(new ArrayList<>(pl.getSongs()));
-    ref.setShared(true);
-    ref.setReadOnly(true);
+        boolean added = database.addPlaylist(target, ref);
+        if (!added) {
+            resp.addProperty("status", "error");
+            resp.addProperty("message", "Failed to share");
+            return resp;
+        }
 
-    return database.addPlaylist(target, ref);
-}
-
-
+        JsonObject data = new JsonObject();
+        data.addProperty("id", ref.getId());
+        data.addProperty("name", ref.getName());
+        data.addProperty("ownerUsername", ref.getOwnerUsername());
+        data.addProperty("isShared", ref.isShared());
+        data.addProperty("readOnly", ref.isReadOnly());
+        resp.addProperty("status", "success");
+        resp.add("data", data);
+        return resp;
+    }
 
     public JsonArray listPlaylists(User user) {
-    List<Playlist> pls = database.getPlaylists(user);
-    JsonArray arr = new JsonArray();
-    for (Playlist p : pls) {
-        JsonObject o = new JsonObject();
-        o.addProperty("id", p.getId());
-        o.addProperty("name", p.getName());
+        List<Playlist> pls = database.getPlaylists(user);
+        JsonArray arr = new JsonArray();
+        for (Playlist p : pls) {
+            JsonObject o = new JsonObject();
+            o.addProperty("id", p.getId());
+            o.addProperty("name", p.getName());
 
-        String ownerUsername = p.getOwnerUsername();
-        o.addProperty("owner", ownerUsername == null ? "" : ownerUsername);
-        o.addProperty("ownerUsername", ownerUsername == null ? "" : ownerUsername);
+            String ownerUsername = p.getOwnerUsername();
+            o.addProperty("owner", ownerUsername == null ? "" : ownerUsername);
+            o.addProperty("ownerUsername", ownerUsername == null ? "" : ownerUsername);
 
-        o.addProperty("isShared", p.isShared());
-        o.addProperty("readOnly", p.isReadOnly());
-        o.addProperty("numberOfSongs", p.getNumberOfSongs());
-        arr.add(o);
-    }
-    return arr;
-}
-
-
-public boolean addSongAsGuest(JsonObject payload) {
-    String title = payload.get("title").getAsString();
-    String artistName = payload.get("artist").getAsString();
-
-    User guest = database.findUserByUsername("guest");
-    if (guest == null) {
-        guest = new User("guest-id", "guest", "guest@example.com", "nopass");
-        database.addUser(guest);
+            o.addProperty("isShared", p.isShared());
+            o.addProperty("readOnly", p.isReadOnly());
+            o.addProperty("numberOfSongs", p.getNumberOfSongs());
+            arr.add(o);
+        }
+        return arr;
     }
 
-    if (database.findSongByName(guest, title) != null) return false;
+    public boolean addSongAsGuest(JsonObject payload) {
+        String title = payload.get("title").getAsString();
+        String artistName = payload.get("artist").getAsString();
 
-    Song song = new Song();
-    song.setId(Database.songIdGenerator.incrementAndGet());
-    song.setName(title);
-    song.setArtist(new Artist(artistName));
-    song.setSource(payload.has("source") ? payload.get("source").getAsString() : "manual");
-    song.setLikeCount(0);
+        User guest = database.findUserByUsername("guest");
+        if (guest == null) {
+            guest = new User("guest-id", "guest", "guest@example.com", "nopass");
+            database.addUser(guest);
+        }
 
-    boolean added = database.addSong(guest, song);
-    if (added) {
-        lastGeneratedSongId = song.getId();
+        if (database.findSongByName(guest, title) != null) return false;
+
+        Song song = new Song();
+        song.setId(Database.songIdGenerator.incrementAndGet());
+        song.setName(title);
+        song.setArtist(new Artist(artistName));
+        song.setSource(payload.has("source") ? payload.get("source").getAsString() : "manual");
+        song.setLikeCount(0);
+
+        boolean added = database.addSong(guest, song);
+        if (added) {
+            lastGeneratedSongId = song.getId();
+        }
+        return added;
     }
-    return added;
-}
 
-private int lastGeneratedSongId = -1;
-public int getLastGeneratedSongId() {
-    return lastGeneratedSongId;
-}
+    private int lastGeneratedSongId = -1;
+    public int getLastGeneratedSongId() {
+        return lastGeneratedSongId;
+    }
 
-public boolean markSongAddedByUser(User user, int songId) {
-    return database.addSongByUser(user, songId);
-}
+    public boolean deleteAccount(User user) {
+        if (user == null) return false;
+        return database.removeUser(user);
+    }
 
-public boolean deleteAccount(User user) {
-    if (user == null) return false;
-    return database.removeUser(user);
-}
-
-
-
-
-    public boolean deleteSong(User user, JsonObject payload) {
+    public JsonObject deleteSong(User user, JsonObject payload) {
+        JsonObject resp = new JsonObject();
         int id = payload.get("songId").getAsInt();
-        return database.deleteSong(user, id);
+        boolean ok = database.deleteSong(user, id);
+        resp.addProperty("status", ok ? "success" : "error");
+        if (!ok) resp.addProperty("message", "Failed to delete song");
+        return resp;
     }
 
     public Song findSongById(User user, int songId) {
@@ -185,25 +259,33 @@ public boolean deleteAccount(User user) {
     }
 
     public JsonArray listSongs(User user) {
-    User guest = database.findUserByUsername("guest");
-    if (guest == null) {
-        return new JsonArray();
+        User guest = database.findUserByUsername("guest");
+        if (guest == null) {
+            return new JsonArray();
+        }
+
+        List<Song> songs = database.getSongs(guest);
+        JsonArray arr = new JsonArray();
+        for (Song s : songs) {
+            JsonObject o = new JsonObject();
+            o.addProperty("id", s.getId());
+            o.addProperty("title", s.getName());
+            o.addProperty("artist", s.getArtist() != null ? s.getArtist().getName() : "Unknown");
+            o.addProperty("source", s.getSource());
+            o.addProperty("likeCount", s.getLikeCount());
+
+            o.addProperty("canDownload", true);
+
+            arr.add(o);
+        }
+        return arr;
     }
 
-    List<Song> songs = database.getSongs(guest);
-    JsonArray arr = new JsonArray();
-    for (Song s : songs) {
-        JsonObject o = new JsonObject();
-        o.addProperty("id", s.getId());
-        o.addProperty("title", s.getName());
-        o.addProperty("artist", s.getArtist() != null ? s.getArtist().getName() : "Unknown");
-        o.addProperty("source", s.getSource());
-        o.addProperty("likeCount", s.getLikeCount());
-        arr.add(o);
+    public boolean addSongToPlaylist(User user, JsonObject payload) {
+        int playlistId = payload.get("playlistId").getAsInt();
+        int songId = payload.get("songId").getAsInt();
+        return database.addSongToPlaylist(user, playlistId, songId);
     }
-    return arr;
-}
-
 
     public JsonArray listTopLikedSongs() {
         List<Song> songs = database.getAllSongsSortedByLikes();
@@ -219,51 +301,23 @@ public boolean deleteAccount(User user) {
         return arr;
     }
 
-
     public JsonArray listLikedSongs(User user) {
-    List<Song> liked = database.getLikedSongs(user);
-    JsonArray arr = new JsonArray();
-    for (Song song : liked) {
-        arr.add(song.getId());
-    }
-    return arr;
-}
-
-
-public JsonArray listSongsAddedByMe(User user) {
-    List<Integer> ids = database.getSongsAddedByUser(user);
-    JsonArray arr = new JsonArray();
-    for (Integer id : ids) {
-        Song s = database.findSongById(user, id);
-        if (s != null) {
-            JsonObject o = new JsonObject();
-            o.addProperty("id", s.getId());
-            o.addProperty("title", s.getName());
-            o.addProperty("artist", s.getArtist() != null ? s.getArtist().getName() : "Unknown");
-            o.addProperty("source", s.getSource());
-            o.addProperty("likeCount", s.getLikeCount());
-            arr.add(o);
+        List<Song> liked = database.getLikedSongs(user);
+        JsonArray arr = new JsonArray();
+        for (Song song : liked) {
+            arr.add(song.getId());
         }
+        return arr;
     }
-    return arr;
-}
 
-
-   public boolean toggleLike(User user, int songId) {
-    return database.toggleLike(user, songId);
-}
-
-
-
-
-
-
-
+    public boolean toggleLike(User user, int songId) {
+        return database.toggleLike(user, songId);
+    }
 
     public boolean checkSharePermission(User user, JsonObject payload) {
-    int playlistId = payload.get("playlistId").getAsInt();
-    Playlist pl = database.findPlaylistById(user, playlistId);
-    return pl != null && Objects.equals(pl.getOwnerUsername(), user.getUsername());
-}
+        int playlistId = payload.get("playlistId").getAsInt();
+        Playlist pl = database.findPlaylistById(user, playlistId);
+        return pl != null && Objects.equals(pl.getOwnerUsername(), user.getUsername());
+    }
 
 }

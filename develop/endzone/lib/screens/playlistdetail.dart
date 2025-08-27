@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+
 import '../models/playlist.dart';
 import '../models/song.dart';
 import '../service/SocketService.dart';
-import '../service/Song.dart';
 import '../service/playlist.dart';
 import '../service/audio.dart';
+
 import '../screens/player.dart';
 
 class PlaylistDetailsScreen extends StatefulWidget {
@@ -21,28 +22,15 @@ class PlaylistDetailsScreen extends StatefulWidget {
 class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
   final SocketService _socketService = SocketService();
   late final PlaylistService _playlistService;
-  final SongService _songService = SongService();
 
+  late final AudioService _audioService;
 
   @override
   void initState() {
     super.initState();
     _playlistService = PlaylistService(_socketService);
-    _ensureSocketConnected();
-  }
+    _audioService = AudioService(socket: _socketService);}
 
-  // اتصال سوکت
-  Future<void> _ensureSocketConnected() async {
-    try {
-      if (!_socketService.isConnected) {
-        await _socketService.connect("172.20.195.170", 8080);
-      }
-    } catch (e) {
-      debugPrint("Socket connect failed: $e");
-    }
-  }
-
-  // ---------- حذف آهنگ ----------
   Future<void> _removeSong(Song song) async {
     try {
       final resp = await _playlistService.socketService.sendAndWait({
@@ -56,12 +44,17 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
       if (resp['status'] == 'success') {
         setState(() {
           if (_hasMusicField(widget.playlist)) {
-            (widget.playlist as dynamic).music.removeWhere((s) => s.id == song.id);
+            (widget.playlist as dynamic)
+                .music
+                .removeWhere((s) => s.id == song.id);
           } else {
-            (widget.playlist as dynamic).songs.removeWhere((s) => s.id == song.id);
+            (widget.playlist as dynamic)
+                .songs
+                .removeWhere((s) => s.id == song.id);
           }
         });
-        Fluttertoast.showToast(msg: "آهنگ حذف شد", backgroundColor: Colors.green);
+        Fluttertoast.showToast(
+            msg: "آهنگ حذف شد", backgroundColor: Colors.green);
       } else {
         Fluttertoast.showToast(
           msg: "خطا در حذف: ${resp['message'] ?? 'نامشخص'}",
@@ -69,22 +62,17 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
         );
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "خطای شبکه هنگام حذف آهنگ", backgroundColor: Colors.red);
+      Fluttertoast.showToast(
+          msg: "خطای شبکه هنگام حذف آهنگ", backgroundColor: Colors.red);
     }
   }
 
-  // ---------- افزودن آهنگ به پلی‌لیست ----------
   Future<void> _addSongToPlaylist(Song song) async {
     try {
-      final resp = await _playlistService.socketService.sendAndWait({
-        "type": "addSongToPlaylist",
-        "payload": {
-          "playlistId": widget.playlist.id,
-          "song": song.toJson(),
-        }
-      });
+      final ok = await _playlistService.addSongToPlaylist(
+          widget.playlist.id, song.id);
 
-      if (resp['status'] == 'success') {
+      if (ok) {
         setState(() {
           if (_hasMusicField(widget.playlist)) {
             (widget.playlist as dynamic).music.add(song);
@@ -92,10 +80,11 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
             (widget.playlist as dynamic).songs.add(song);
           }
         });
-        Fluttertoast.showToast(msg: "آهنگ اضافه شد", backgroundColor: Colors.green);
+        Fluttertoast.showToast(
+            msg: "آهنگ اضافه شد", backgroundColor: Colors.green);
       } else {
         Fluttertoast.showToast(
-          msg: "خطا در افزودن: ${resp['message'] ?? 'نامشخص'}",
+          msg: "خطا در افزودن آهنگ",
           backgroundColor: Colors.red,
         );
       }
@@ -104,11 +93,44 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
     }
   }
 
-  // ---------- نمایش لیست آهنگ‌ها برای انتخاب ----------
+  Future<List<Song>> _fetchPickableSongs() async {
+    try {
+      final allResp = await _socketService.listSongs();
+      if (allResp['status'] != 'success' || allResp['data'] == null) return [];
+
+      final allRaw = (allResp['data']['songs'] as List?) ?? [];
+      final allSongs = allRaw
+          .map((e) => Song.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      final allById = {for (var s in allSongs) s.id: s};
+
+      final likedResp = await _socketService.listLikedSongs();
+      if (likedResp['status'] != 'success') return [];
+
+      final likedRaw =
+          likedResp['data']?['songs'] as List? ?? likedResp['data'] as List? ?? [];
+      final likedIds = <int>[];
+      for (var v in likedRaw) {
+        if (v is int) {
+          likedIds.add(v);
+        } else if (v is num) {
+          likedIds.add(v.toInt());
+        } else if (v is String) {
+          final n = int.tryParse(v);
+          if (n != null) likedIds.add(n);
+        }
+      }
+
+      return likedIds.map((id) => allById[id]).whereType<Song>().toList();
+    } catch (e) {
+      debugPrint('fetchPickableSongs error: $e');
+      return [];
+    }
+  }
+
   void _showSongPickerDialog() async {
     try {
-      final songs = await _songService.fetchLikedSongs();
-
+      final songs = await _fetchPickableSongs();
       if (!mounted) return;
 
       showDialog(
@@ -139,11 +161,11 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
         ),
       );
     } catch (e) {
-      Fluttertoast.showToast(msg: "خطا در دریافت لیست آهنگ‌ها", backgroundColor: Colors.red);
+      Fluttertoast.showToast(
+          msg: "خطا در دریافت لیست آهنگ‌ها", backgroundColor: Colors.red);
     }
   }
 
-  // ---------- اشتراک گذاری ----------
   void _showShareDialog() {
     final controller = TextEditingController();
 
@@ -153,10 +175,13 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
         title: const Text("اشتراک‌گذاری پلی‌لیست"),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(labelText: "نام کاربری مقصد"),
+          decoration:
+          const InputDecoration(labelText: "نام کاربری مقصد"),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("انصراف")),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("انصراف")),
           ElevatedButton(
             onPressed: () {
               final username = controller.text.trim();
@@ -174,18 +199,23 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
 
   Future<void> _sharePlaylistWith(String targetUsername) async {
     try {
-      final ok = await _playlistService.sharePlaylist(widget.playlist.id, targetUsername.trim());
+      final ok = await _playlistService.sharePlaylist(
+          widget.playlist.id, targetUsername.trim());
       if (ok) {
-        Fluttertoast.showToast(msg: "پلی‌لیست به $targetUsername ارسال شد", backgroundColor: Colors.green);
+        Fluttertoast.showToast(
+            msg: "پلی‌لیست به $targetUsername ارسال شد",
+            backgroundColor: Colors.green);
       } else {
-        Fluttertoast.showToast(msg: "خطا در اشتراک‌گذاری", backgroundColor: Colors.red);
+        Fluttertoast.showToast(
+            msg: "خطا در اشتراک‌گذاری", backgroundColor: Colors.red);
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "خطای شبکه هنگام اشتراک‌گذاری", backgroundColor: Colors.red);
+      Fluttertoast.showToast(
+          msg: "خطای شبکه هنگام اشتراک‌گذاری",
+          backgroundColor: Colors.red);
     }
   }
 
-  // ---------- Helpers ----------
   bool _hasMusicField(Playlist p) {
     try {
       final dyn = p as dynamic;
@@ -209,7 +239,6 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
     }
   }
 
-  // ---------- UI ----------
   Widget _emptyState() {
     return Center(
       child: Column(
@@ -217,7 +246,8 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
         children: const [
           Icon(Icons.queue_music, size: 60, color: Colors.grey),
           SizedBox(height: 12),
-          Text("هنوز آهنگی در این پلی‌لیست نیست", style: TextStyle(fontSize: 16)),
+          Text("هنوز آهنگی در این پلی‌لیست نیست",
+              style: TextStyle(fontSize: 16)),
         ],
       ),
     );
@@ -231,8 +261,11 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
       appBar: AppBar(
         title: Text(widget.playlist.name),
         actions: [
-          IconButton(icon: const Icon(Icons.share), onPressed: _showShareDialog),
-          IconButton(icon: const Icon(Icons.add), onPressed: _showSongPickerDialog), // تغییر اصلی
+          IconButton(
+              icon: const Icon(Icons.share), onPressed: _showShareDialog),
+          IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: _showSongPickerDialog),
         ],
       ),
       body: songs.isEmpty
@@ -247,16 +280,20 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
             title: Text(song.name),
             subtitle: Text(song.artist ?? "Unknown"),
             trailing: IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon:
+              const Icon(Icons.delete, color: Colors.red),
               onPressed: () => _confirmRemoveSong(song),
             ),
             onTap: () async {
-              await _audioService.setPlaylist(songs, startIndex: index);
+              await _audioService.setPlaylist(songs,
+                  startIndex: index);
               await _audioService.play();
+              if (!mounted) return;
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => PlayerScreen(audioService: _audioService),
+                  builder: (_) =>
+                      PlayerScreen(audioService: _audioService),
                 ),
               );
             },
@@ -273,8 +310,12 @@ class _PlaylistDetailsScreenState extends State<PlaylistDetailsScreen> {
         title: const Text('حذف آهنگ'),
         content: Text('آیا از حذف "${song.name}" مطمئنی؟'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('انصراف')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('حذف')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('انصراف')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('حذف')),
         ],
       ),
     );

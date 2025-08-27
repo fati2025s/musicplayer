@@ -30,7 +30,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
-      stream: _audio.currentSongStream, // گوش دادن به تغییر آهنگ
+      stream: _audio.currentSongStream,
       builder: (context, snapshot) {
         final currentSong = snapshot.data;
 
@@ -83,7 +83,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
               const SizedBox(height: 60),
 
-              // نوار پیشرفت
               StreamBuilder<Duration>(
                 stream: _audio.positionStream,
                 builder: (context, snapshot) {
@@ -132,7 +131,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
               const SizedBox(height: 40),
 
-              // کنترل‌ها
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
