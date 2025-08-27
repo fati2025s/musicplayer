@@ -24,7 +24,7 @@ public class Server {
             }
 
         } catch (IOException e) {
-            System.err.println("❌ Server error: " + e.getMessage());
+            System.err.println("Server error: " + e.getMessage());
             e.printStackTrace();
         } finally {
             executor.shutdown();

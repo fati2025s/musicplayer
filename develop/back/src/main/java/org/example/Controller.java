@@ -21,7 +21,6 @@ public class Controller {
         u.setUsername(username);
         u.setPassword(password);
         u.setEmail(email);
-        u.setAdmin(false);
 
         return database.addUser(u);
     }
@@ -88,20 +87,17 @@ public boolean renamePlaylist(User user, JsonObject payload) {
    public boolean sharePlaylist(User user, JsonObject payload) {
     int playlistId = payload.get("playlistId").getAsInt();
 
-    String targetEmail = payload.has("targetEmail")
-            ? payload.get("targetEmail").getAsString()
-            : null;
     String targetUsername = payload.has("targetUsername")
             ? payload.get("targetUsername").getAsString()
             : null;
 
     Playlist pl = database.findPlaylistById(user, playlistId);
     if (pl == null) return false;
-    if (!Objects.equals(pl.getOwnerUsername(), user.getEmail())) return false;
 
-    User target = (targetEmail != null)
-            ? database.findUserByEmail(targetEmail)
-            : database.findUserByUsername(targetUsername);
+    if (!Objects.equals(pl.getOwnerUsername(), user.getUsername())) return false;
+
+    if (targetUsername == null) return false;
+    User target = database.findUserByUsername(targetUsername);
 
     if (target == null) return false;
 
@@ -114,6 +110,7 @@ public boolean renamePlaylist(User user, JsonObject payload) {
 }
 
 
+
     public JsonArray listPlaylists(User user) {
     List<Playlist> pls = database.getPlaylists(user);
     JsonArray arr = new JsonArray();
@@ -122,9 +119,9 @@ public boolean renamePlaylist(User user, JsonObject payload) {
         o.addProperty("id", p.getId());
         o.addProperty("name", p.getName());
 
-        String ownerEmail = p.getOwnerUsername();
-        o.addProperty("owner", ownerEmail == null ? "" : ownerEmail);
-        o.addProperty("ownerEmail", ownerEmail == null ? "" : ownerEmail);
+        String ownerUsername = p.getOwnerUsername();
+        o.addProperty("owner", ownerUsername == null ? "" : ownerUsername);
+        o.addProperty("ownerUsername", ownerUsername == null ? "" : ownerUsername);
 
         o.addProperty("isShared", p.isShared());
         o.addProperty("readOnly", p.isReadOnly());
@@ -134,21 +131,49 @@ public boolean renamePlaylist(User user, JsonObject payload) {
     return arr;
 }
 
-    public boolean addSong(User user, JsonObject payload) {
-        String title = payload.get("title").getAsString();
-        String artistName = payload.get("artist").getAsString();
 
-        if (database.findSongByName(user, title) != null) return false;
+public boolean addSongAsGuest(JsonObject payload) {
+    String title = payload.get("title").getAsString();
+    String artistName = payload.get("artist").getAsString();
 
-        Song song = new Song();
-        song.setId(Database.songIdGenerator.incrementAndGet());
-        song.setName(title);
-        song.setArtist(new Artist(artistName));
-        song.setSource(payload.has("source") ? payload.get("source").getAsString() : "manual");
-        song.setLikeCount(0);
-
-        return database.addSong(user, song);
+    User guest = database.findUserByUsername("guest");
+    if (guest == null) {
+        guest = new User("guest-id", "guest", "guest@example.com", "nopass");
+        database.addUser(guest);
     }
+
+    if (database.findSongByName(guest, title) != null) return false;
+
+    Song song = new Song();
+    song.setId(Database.songIdGenerator.incrementAndGet());
+    song.setName(title);
+    song.setArtist(new Artist(artistName));
+    song.setSource(payload.has("source") ? payload.get("source").getAsString() : "manual");
+    song.setLikeCount(0);
+
+    boolean added = database.addSong(guest, song);
+    if (added) {
+        lastGeneratedSongId = song.getId();
+    }
+    return added;
+}
+
+private int lastGeneratedSongId = -1;
+public int getLastGeneratedSongId() {
+    return lastGeneratedSongId;
+}
+
+public boolean markSongAddedByUser(User user, int songId) {
+    return database.addSongByUser(user, songId);
+}
+
+public boolean deleteAccount(User user) {
+    if (user == null) return false;
+    return database.removeUser(user);
+}
+
+
+
 
     public boolean deleteSong(User user, JsonObject payload) {
         int id = payload.get("songId").getAsInt();
@@ -160,19 +185,25 @@ public boolean renamePlaylist(User user, JsonObject payload) {
     }
 
     public JsonArray listSongs(User user) {
-        List<Song> songs = database.getSongs(user);
-        JsonArray arr = new JsonArray();
-        for (Song s : songs) {
-            JsonObject o = new JsonObject();
-            o.addProperty("id", s.getId());
-            o.addProperty("title", s.getName());
-            o.addProperty("artist", s.getArtist() != null ? s.getArtist().getName() : "Unknown");
-            o.addProperty("source", s.getSource());
-            o.addProperty("likeCount", s.getLikeCount());
-            arr.add(o);
-        }
-        return arr;
+    User guest = database.findUserByUsername("guest");
+    if (guest == null) {
+        return new JsonArray();
     }
+
+    List<Song> songs = database.getSongs(guest);
+    JsonArray arr = new JsonArray();
+    for (Song s : songs) {
+        JsonObject o = new JsonObject();
+        o.addProperty("id", s.getId());
+        o.addProperty("title", s.getName());
+        o.addProperty("artist", s.getArtist() != null ? s.getArtist().getName() : "Unknown");
+        o.addProperty("source", s.getSource());
+        o.addProperty("likeCount", s.getLikeCount());
+        arr.add(o);
+    }
+    return arr;
+}
+
 
     public JsonArray listTopLikedSongs() {
         List<Song> songs = database.getAllSongsSortedByLikes();
@@ -188,40 +219,46 @@ public boolean renamePlaylist(User user, JsonObject payload) {
         return arr;
     }
 
-    public boolean isAdmin(User u) {
-        return u != null && u.isAdmin();
-    }
 
-    public JsonArray adminListSongs() {
-        List<Song> songs = database.getAllSongs();
-        JsonArray arr = new JsonArray();
-        for (Song s : songs) {
+    public JsonArray listLikedSongs(User user) {
+    List<Song> liked = database.getLikedSongs(user);
+    JsonArray arr = new JsonArray();
+    for (Song song : liked) {
+        arr.add(song.getId());
+    }
+    return arr;
+}
+
+
+public JsonArray listSongsAddedByMe(User user) {
+    List<Integer> ids = database.getSongsAddedByUser(user);
+    JsonArray arr = new JsonArray();
+    for (Integer id : ids) {
+        Song s = database.findSongById(user, id);
+        if (s != null) {
             JsonObject o = new JsonObject();
             o.addProperty("id", s.getId());
             o.addProperty("title", s.getName());
             o.addProperty("artist", s.getArtist() != null ? s.getArtist().getName() : "Unknown");
+            o.addProperty("source", s.getSource());
+            o.addProperty("likeCount", s.getLikeCount());
             arr.add(o);
         }
-        return arr;
     }
+    return arr;
+}
 
-    public boolean adminDeleteSong(JsonObject payload) {
-        int songId = payload.get("songId").getAsInt();
-        return database.adminDeleteSong(songId);
-    }
 
-    public JsonArray listUsers(User requester) {
-        List<User> users = database.getAllUsers();
-        JsonArray arr = new JsonArray();
-        for (User u : users) {
-            JsonObject o = new JsonObject();
-            o.addProperty("username", u.getUsername());
-            o.addProperty("email", u.getEmail());
-            o.addProperty("isAdmin", u.isAdmin());
-            arr.add(o);
-        }
-        return arr;
-    }
+   public boolean toggleLike(User user, int songId) {
+    return database.toggleLike(user, songId);
+}
+
+
+
+
+
+
+
 
     public boolean checkSharePermission(User user, JsonObject payload) {
     int playlistId = payload.get("playlistId").getAsInt();

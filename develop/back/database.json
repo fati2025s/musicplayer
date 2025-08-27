@@ -1,15 +1,54 @@
 {
-  "amirabbasamadeh": {
-    "id": "328aa190-6631-4fdc-b95e-a6da8d2bc117",
-    "username": "amirabbasamadeh",
-    "email": "amirabbasamadeh1@gmail.com",
-    "password": "1234567A",
+  "guest": {
+    "id": "guest-id",
+    "username": "guest",
+    "password": "nopass",
+    "email": "guest@example.com",
     "profilePicturePaths": [],
-    "songs": [],
+    "songs": [
+      {
+        "id": 2,
+        "name": "9357.mp3",
+        "artist": {
+          "name": "Unknown",
+          "numOfSongs": 0
+        },
+        "liked": false,
+        "pakhsh": 0,
+        "filePath": "C:\\Users\\Amirabbas\\Desktop\\musicplayer\\develop\\back\\uploads\\guest\\1756152534593_9357.mp3",
+        "source": "uploaded",
+        "likeCount": 4
+      }
+    ],
+    "playlists": [],
+    "canReceiveShares": true
+  },
+  "amirabbas": {
+    "id": "95229b35-1f83-4fc7-936a-edd42b964998",
+    "username": "amirabbas",
+    "password": "1234567A",
+    "email": "amirabbasamadeh@gmail.com",
+    "profilePicturePaths": [],
+    "songs": [
+      {
+        "id": 2,
+        "name": "persian-fantasy-157742.mp3",
+        "artist": {
+          "name": "Unknown",
+          "numOfSongs": 0
+        },
+        "liked": false,
+        "pakhsh": 0,
+        "filePath": "C:\\Users\\Amirabbas\\Desktop\\musicplayer\\develop\\back\\uploads\\amirabbas\\1756268765488_persian-fantasy-157742.mp3",
+        "source": "uploaded",
+        "likeCount": 0
+      }
+    ],
     "playlists": [
       {
         "id": 1,
-        "name": "hi",
+        "name": "hend",
+        "ownerUsername": "amirabbas",
         "songs": [],
         "artists": [],
         "liked": false,
@@ -18,37 +57,8 @@
       },
       {
         "id": 1,
-        "name": "hello",
-        "songs": [],
-        "artists": [],
-        "liked": false,
-        "readOnly": false,
-        "shared": false
-      },
-      {
-        "id": 1,
-        "name": "my",
-        "ownerUsername": "amirabbasamadeh1@gmail.com",
-        "songs": [],
-        "artists": [],
-        "liked": false,
-        "readOnly": false,
-        "shared": false
-      },
-      {
-        "id": 2,
-        "name": "man",
-        "ownerUsername": "amirabbasamadeh1@gmail.com",
-        "songs": [],
-        "artists": [],
-        "liked": false,
-        "readOnly": false,
-        "shared": false
-      },
-      {
-        "id": 1,
-        "name": "ihope",
-        "ownerUsername": "amirabbasamadeh1@gmail.com",
+        "name": "habbit",
+        "ownerUsername": "amirabbas",
         "songs": [],
         "artists": [],
         "liked": false,
@@ -56,87 +66,6 @@
         "shared": false
       }
     ],
-    "likedSongs": [],
-    "likedArtists": [],
-    "canReceiveShares": true,
-    "admin": false
-  },
-  "amirabbass": {
-    "id": "c22864a0-886a-4cb0-ad81-bace3c034c6f",
-    "username": "amirabbass",
-    "email": "amiraliamad@gmail.com",
-    "password": "1234567A",
-    "profilePicturePaths": [],
-    "songs": [],
-    "playlists": [],
-    "likedSongs": [],
-    "likedArtists": [],
-    "canReceiveShares": true,
-    "admin": false
-  },
-  "amirmohammad": {
-    "id": "17864e65-5c84-47e5-a73f-45f9ddef17af",
-    "username": "amirmohammad",
-    "email": "amirmohammad@gmail.com",
-    "password": "1234567A",
-    "profilePicturePaths": [],
-    "songs": [],
-    "playlists": [],
-    "likedSongs": [],
-    "likedArtists": [],
-    "canReceiveShares": true,
-    "admin": false
-  },
-  "amirabbasamadeh2": {
-    "id": "9041dda0-f204-4067-94ed-8496accafe6a",
-    "username": "amirabbasamadeh2",
-    "email": "amirabbasamadeh1@gmail.com",
-    "password": "1234567A",
-    "profilePicturePaths": [],
-    "songs": [],
-    "playlists": [],
-    "likedSongs": [],
-    "likedArtists": [],
-    "canReceiveShares": true,
-    "admin": false
-  },
-  "amirreaza": {
-    "id": "f62c7d26-024c-4320-bec1-8195b8f55ca2",
-    "username": "amirreaza",
-    "email": "amiramadeh1@gmail.com",
-    "password": "1234567A",
-    "profilePicturePaths": [],
-    "songs": [],
-    "playlists": [],
-    "likedSongs": [],
-    "likedArtists": [],
-    "canReceiveShares": true,
-    "admin": false
-  },
-  "amirsina": {
-    "id": "cc754257-d877-49a3-a341-b1602c7b3f03",
-    "username": "amirsina",
-    "email": "amirsinaamadeh@gmail.com",
-    "password": "1234567A",
-    "profilePicturePaths": [],
-    "songs": [],
-    "playlists": [],
-    "likedSongs": [],
-    "likedArtists": [],
-    "canReceiveShares": true,
-    "admin": false
-  },
-  "amirabbasamadeh23": {
-    "id": "490ada1c-242a-427d-963f-230da7314644",
-    "username": "amirabbasamadeh23",
-    "email": "battleangel1@gmail.com",
-    "password": "1234567A",
-    "profilePicturePaths": [],
-    "songs": [],
-    "playlists": [],
-    "likedSongs": [],
-    "likedArtists": [],
-    "canReceiveShares": true,
-    "admin": false
+    "canReceiveShares": true
   }
 }

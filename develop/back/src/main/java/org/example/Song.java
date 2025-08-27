@@ -162,5 +162,7 @@ public class Song {
     }
 
     public void setLikeCount(int i) {
-    }
+    this.likeCount = i;
+}
+
 }

@@ -7,22 +7,14 @@ import java.util.Objects;
 public class User {
     private String id;
     private String username;
-    private String email;
     private String password;
+    private String email;
 
     private List<String> profilePicturePaths;  
-    private List<Song> songs;                 
-    private List<Playlist> playlists;          
-    private List<Song> likedSongs;             
-    private List<Artist> likedArtists;         
+    private List<Song> songs;
+    private List<Playlist> playlists;
 
     private boolean canReceiveShares = true;
-
-    private boolean admin = false;
-
-public boolean isAdmin() { return admin; }
-public void setAdmin(boolean admin) { this.admin = admin; }
-
 
     public User(String id, String username, String email, String password) {
         this.id = id;
@@ -32,16 +24,12 @@ public void setAdmin(boolean admin) { this.admin = admin; }
         this.profilePicturePaths = new ArrayList<>();
         this.songs = new ArrayList<>();
         this.playlists = new ArrayList<>();
-        this.likedSongs = new ArrayList<>();
-        this.likedArtists = new ArrayList<>();
     }
 
     public User() {
         this.profilePicturePaths = new ArrayList<>();
         this.songs = new ArrayList<>();
         this.playlists = new ArrayList<>();
-        this.likedSongs = new ArrayList<>();
-        this.likedArtists = new ArrayList<>();
     }
 
     public String getId() { return id; }
@@ -65,12 +53,6 @@ public void setAdmin(boolean admin) { this.admin = admin; }
     public List<Playlist> getPlaylists() { return playlists; }
     public void setPlaylists(List<Playlist> playlists) { this.playlists = playlists; }
 
-    public List<Song> getLikedSongs() { return likedSongs; }
-    public void setLikedSongs(List<Song> likedSongs) { this.likedSongs = likedSongs; }
-
-    public List<Artist> getLikedArtists() { return likedArtists; }
-    public void setLikedArtists(List<Artist> likedArtists) { this.likedArtists = likedArtists; }
-
     public boolean canReceiveShares() { return canReceiveShares; }
     public void setCanReceiveShares(boolean canReceiveShares) { this.canReceiveShares = canReceiveShares; }
     public void toggleReceiveShares() { this.canReceiveShares = !this.canReceiveShares; }
@@ -87,30 +69,15 @@ public void setAdmin(boolean admin) { this.admin = admin; }
     }
 
     public void addPlaylist(Playlist playlist) {
-    if (!playlists.contains(playlist)) {
-        playlists.add(playlist);
-        playlist.setOwnerUsername(this.username);
-    }
-}
-
-public void removePlaylist(Playlist playlist) {
-    if (playlist.getOwnerUsername() != null && playlist.getOwnerUsername().equals(this.email)) {
-        playlists.remove(playlist);
-    }
-}
-
-
-    public void likeSong(Song song) {
-        if (!likedSongs.contains(song)) {
-            likedSongs.add(song);
-            song.addLikeCount();
-            song.setLiked(true);
+        if (!playlists.contains(playlist)) {
+            playlists.add(playlist);
+            playlist.setOwnerUsername(this.username);
         }
     }
 
-    public void likeArtist(Artist artist) {
-        if (!likedArtists.contains(artist)) {
-            likedArtists.add(artist);
+    public void removePlaylist(Playlist playlist) {
+        if (playlist.getOwnerUsername() != null && playlist.getOwnerUsername().equals(this.username)) {
+            playlists.remove(playlist);
         }
     }
 

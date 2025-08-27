@@ -3,73 +3,77 @@ package org.example;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Admin extends User {
+public class Admin {
 
     private final Database db;
 
-    public Admin(String id, String username, String email, String password) {
-        super(id, username, email, password);
-        this.db = new Database();
+    public Admin(Database db) {
+        this.db = db;
     }
 
-    public boolean deleteUser(User user) { 
-        return db.removeUser(user); 
+    public List<User> getAllUsers() {
+        return db.getAllUsers();
     }
 
-    public List<User> getAllUsers() { 
-        return db.getAllUsers(); 
+    public User findUserByUsername(String username) {
+        return db.findUserByUsername(username);
     }
 
-    public User findUserByUsername(String username) { 
-        return db.findUserByUsername(username); 
+    public String getUserInfo(String username) {
+        User user = findUserByUsername(username);
+        if (user == null) return "User not found";
+
+        List<Song> likedSongs = db.getLikedSongs(user);
+
+        return String.format(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getSongs().size(),
+                user.getPlaylists().size(),
+                likedSongs.size()
+        );
     }
 
-    public List<Playlist> getAllPlaylists() {
-        List<Playlist> playlists = new ArrayList<>();
-        for (User user : db.getAllUsers()) {
-            if (user.getPlaylists() != null) playlists.addAll(user.getPlaylists());
-        }
-        return playlists;
-    }
-
-    public boolean deletePlaylist(Playlist playlist) {
-        boolean removed = false;
-        for (User user : db.getAllUsers()) {
-            if (db.removePlaylist(user, playlist)) removed = true;
-        }
-        return removed;
-    }
-
-    public List<Playlist> getUserPlaylists(User user) {
-        return user != null && user.getPlaylists() != null ? user.getPlaylists() : Collections.emptyList();
+    public boolean deleteUser(String username) {
+        User u = db.findUserByUsername(username);
+        return db.removeUser(u);
     }
 
     public List<Song> getAllSongs() {
-        List<Song> songs = new ArrayList<>();
-        for (User user : db.getAllUsers()) {
-            if (user.getSongs() != null) songs.addAll(user.getSongs());
-        }
-        return songs;
+        return db.getAllSongs();
     }
 
-    public boolean deleteSong(Song song) {
+        public boolean deleteSong(int songId) {
         boolean removed = false;
-        for (User user : db.getAllUsers()) {
-            if (db.removeSong(user, song)) removed = true;
-            if (user.getLikedSongs() != null) user.getLikedSongs().remove(song);
+
+        for (User u : db.getAllUsers()) {
+            removed |= u.getSongs().removeIf(s -> s.getId() == songId);
         }
+
+        for (Set<Integer> liked : db.getUserLikedSongs().values()) {
+            liked.remove(songId);
+        }
+
+        
+        for (User u : db.getAllUsers()) {
+            for (Playlist p : u.getPlaylists()) {
+                p.getSongs().removeIf(s -> s.getId() == songId);
+            }
+        }
+
+        if (removed) {
+            db.save();
+        }
+
         return removed;
     }
 
-    public List<Song> getMostPlayedSongs() {
-        return getAllSongs().stream()
-                .sorted(Comparator.comparingInt(Song::getPakhsh).reversed())
-                .collect(Collectors.toList());
-    }
 
-    public List<Song> getMostLikedSongs() {
-        return getAllSongs().stream()
-                .sorted(Comparator.comparingInt(Song::getLikeCount).reversed())
-                .collect(Collectors.toList());
+    public List<Song> getTop20MostLikedSongs() {
+        return db.getAllSongsSortedByLikes()
+                 .stream()
+                 .limit(20)
+                 .collect(Collectors.toList());
     }
 }
