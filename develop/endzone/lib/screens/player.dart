@@ -1,0 +1,196 @@
+import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
+import '../service/audio.dart';
+
+class PlayerScreen extends StatefulWidget {
+  final AudioService audioService;
+
+  const PlayerScreen({Key? key, required this.audioService}) : super(key: key);
+
+  @override
+  State<PlayerScreen> createState() => _PlayerScreenState();
+}
+
+class _PlayerScreenState extends State<PlayerScreen> {
+  late AudioService _audio;
+  bool isShuffle = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _audio = widget.audioService;
+  }
+
+  String formatTime(Duration d) {
+    final minutes = d.inMinutes.toString().padLeft(2, '0');
+    final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return "$minutes:$seconds";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: _audio.currentSongStream, // گوش دادن به تغییر آهنگ
+      builder: (context, snapshot) {
+        final currentSong = snapshot.data;
+
+        if (currentSong == null) {
+          return const Scaffold(
+            body: Center(child: Text("هیچ آهنگی در حال پخش نیست")),
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          appBar: AppBar(
+            backgroundColor: Colors.red.shade600,
+            title: Text(currentSong.name),
+            centerTitle: true,
+            elevation: 0,
+          ),
+          body: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (currentSong.coverUrl != null)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.network(
+                      currentSong.coverUrl!,
+                      height: 250,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                )
+              else
+                const Icon(Icons.music_note, size: 100, color: Colors.red),
+
+              const SizedBox(height: 16),
+
+              Text(
+                currentSong.name,
+                style: const TextStyle(
+                    fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                currentSong.artist,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+
+              const SizedBox(height: 60),
+
+              // نوار پیشرفت
+              StreamBuilder<Duration>(
+                stream: _audio.positionStream,
+                builder: (context, snapshot) {
+                  final position = snapshot.data ?? Duration.zero;
+
+                  return StreamBuilder<Duration?>(
+                    stream: _audio.durationStream,
+                    builder: (context, snap) {
+                      final duration = snap.data ?? Duration.zero;
+                      return Column(
+                        children: [
+                          SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              activeTrackColor: Colors.red,
+                              inactiveTrackColor: Colors.red.shade100,
+                              thumbColor: Colors.red,
+                              overlayColor: Colors.red.withOpacity(0.2),
+                            ),
+                            child: Slider(
+                              min: 0,
+                              max: duration.inSeconds.toDouble(),
+                              value: position.inSeconds
+                                  .clamp(0, duration.inSeconds)
+                                  .toDouble(),
+                              onChanged: (val) {
+                                _audio.seekTo(Duration(seconds: val.toInt()));
+                              },
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(formatTime(position)),
+                                Text(formatTime(duration)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
+
+              const SizedBox(height: 40),
+
+              // کنترل‌ها
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.skip_previous),
+                    color: Colors.red,
+                    iconSize: 50,
+                    onPressed: () => _audio.previous(),
+                  ),
+
+                  const SizedBox(width: 15),
+
+                  StreamBuilder<PlayerState>(
+                    stream: _audio.playerStateStream,
+                    builder: (context, snapshot) {
+                      final playing = snapshot.data?.playing ?? false;
+                      final icon =
+                      playing ? Icons.pause_circle : Icons.play_circle;
+                      final action = playing ? _audio.pause : _audio.play;
+                      return IconButton(
+                        icon: Icon(icon, color: Colors.red),
+                        iconSize: 65,
+                        onPressed: action,
+                      );
+                    },
+                  ),
+
+                  const SizedBox(width: 15),
+
+                  IconButton(
+                    icon: const Icon(Icons.skip_next),
+                    color: Colors.red,
+                    iconSize: 50,
+                    onPressed: () => _audio.next(),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 25),
+
+              IconButton(
+                icon: Icon(
+                  isShuffle ? Icons.shuffle_on : Icons.shuffle,
+                  color: isShuffle ? Colors.green : Colors.red,
+                ),
+                iconSize: 36,
+                onPressed: () {
+                  setState(() {
+                    isShuffle = !isShuffle;
+                    _audio.setShuffle(isShuffle);
+                  });
+                },
+              ),
+              const Text("Shuffle"),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
