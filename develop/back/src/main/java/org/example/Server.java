@@ -8,10 +8,10 @@ import java.util.concurrent.Executors;
 
 public class Server {
     private static final int PORT = 8080;
-    private static final int THREAD_POOL_SIZE = 20;
+    private static final int TreadPSize = 20;
 
     public static void main(String[] args) {
-        ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+        ExecutorService executor = Executors.newFixedThreadPool(TreadPSize);
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Server is running on port " + PORT);

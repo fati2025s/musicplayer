@@ -286,8 +286,6 @@ public class ClientHandler implements Runnable {
     }
 
     private void sendFileInChunks(BufferedWriter writer, File file, String chunkMessage, String doneMessage) throws IOException {
-        long fileSize = file.length();
-        String fileName = file.getName();
 
         try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
             byte[] buffer = new byte[CHUNK_SIZE];
